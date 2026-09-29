@@ -1,0 +1,10 @@
+# popis: Založí s.r.o., společníky zadá uživatel ručně
+otevri    /Subjekty/Novy.aspx
+vyber     @main #ddlTyp = "Právnická osoba"
+vypln     @main #txtNazev = {firma.nazev} s.r.o.
+vypln     @main #txtICO = {firma.ico}
+pouzij    Adresa
+# Během pauzy můžeš zadávat ručně nebo spouštět úseky z panelu (např. Spolecnik).
+rucne     Zadej společníky a dej Pokračovat
+pouzij    Ulozit
+zapamatuj spz = @main #lblSpisovaZnacka

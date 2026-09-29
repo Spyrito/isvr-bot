@@ -1,0 +1,12 @@
+# popis: Založí fyzickou osobu – podnikatele
+otevri    /Subjekty/Novy.aspx
+vyber     @main #ddlTyp = "Fyzická osoba"
+cekej-na  @main label:"Rodné číslo"
+vypln     @main label:"Jméno" = {osoba.jmeno}
+vypln     @main label:"Příjmení" = {osoba.prijmeni}
+vypln     @main label:"Rodné číslo" = {osoba.rc_lomitko}
+vypln     @main #txtICO = {firma.ico}
+pouzij    Adresa
+pouzij    Ulozit
+zapamatuj spz = @main #lblSpisovaZnacka
+zapamatuj id  = @main text:"Subjekt uložen pod č." /(\d+)/

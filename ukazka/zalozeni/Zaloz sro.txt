@@ -1,0 +1,9 @@
+# popis: Založí s.r.o. se dvěma společníky
+otevri    /Subjekty/Novy.aspx
+vyber     @main #ddlTyp = "Právnická osoba"
+vypln     @main #txtNazev = {firma.nazev} s.r.o.
+vypln     @main #txtICO = {firma.ico}
+pouzij    Adresa
+pouzij    Spolecnik 2x
+pouzij    Ulozit
+zapamatuj spz = @main #lblSpisovaZnacka

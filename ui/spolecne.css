@@ -1,0 +1,97 @@
+:root {
+  --pozadi: #f6f7f9;
+  --plocha: #ffffff;
+  --plocha2: #f1f3f4;
+  --text: #1f2328;
+  --tlumeny: #5f6368;
+  --okraj: #d5d9de;
+  --akcent: #1a4d8f;
+  --akcent-hover: #163f75;
+  --akcent-svetly: #e8f0fe;
+  --chyba: #b3261e;
+  --chyba-pozadi: #fce8e6;
+  --ok: #0d652d;
+  --ok-pozadi: #e6f4ea;
+  --varovani-pozadi: #fef7e0;
+  --varovani: #7a5a00;
+  --kod: Consolas, "Cascadia Mono", "SF Mono", Menlo, monospace;
+  --radius: 8px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --pozadi: #17191c;
+    --plocha: #202226;
+    --plocha2: #2a2d32;
+    --text: #e6e8eb;
+    --tlumeny: #9aa0a6;
+    --okraj: #3c4046;
+    --akcent: #8ab4f8;
+    --akcent-hover: #aecbfa;
+    --akcent-svetly: #1f3760;
+    --chyba: #f28b82;
+    --chyba-pozadi: #4a1f1c;
+    --ok: #81c995;
+    --ok-pozadi: #13361f;
+    --varovani-pozadi: #3d3000;
+    --varovani: #fdd663;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font: 13px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: var(--text);
+  background: var(--pozadi);
+}
+button, .tl {
+  font: inherit;
+  padding: 5px 11px;
+  border-radius: 6px;
+  border: 1px solid var(--okraj);
+  background: var(--plocha);
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+button:hover:not(:disabled) { background: var(--plocha2); }
+button:disabled { opacity: .5; cursor: default; }
+button.hl { background: var(--akcent); border-color: var(--akcent); color: #fff; }
+@media (prefers-color-scheme: dark) { button.hl { color: #10213d; } }
+button.hl:hover:not(:disabled) { background: var(--akcent-hover); }
+button.st { color: var(--chyba); }
+button.ikona { padding: 3px 7px; }
+input, select, textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--plocha);
+  border: 1px solid var(--okraj);
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid var(--akcent); outline-offset: -1px; }
+code, .kod { font-family: var(--kod); font-size: 12px; }
+.tlumeny { color: var(--tlumeny); }
+.box { border-radius: var(--radius); padding: 8px 10px; }
+.box.chyba { background: var(--chyba-pozadi); color: var(--chyba); }
+.box.ok { background: var(--ok-pozadi); color: var(--ok); }
+.box.var { background: var(--varovani-pozadi); color: var(--varovani); }
+.box.info { background: var(--akcent-svetly); }
+.radek { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.skryte { display: none !important; }
+dialog {
+  border: 1px solid var(--okraj);
+  border-radius: 12px;
+  background: var(--plocha);
+  color: var(--text);
+  padding: 18px 20px;
+  min-width: 340px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.25);
+}
+dialog::backdrop { background: rgba(0,0,0,.3); }
+dialog h3 { margin: 0 0 12px; font-size: 15px; }
+dialog label { display: block; margin-top: 10px; color: var(--tlumeny); font-size: 12px; }
+dialog label input, dialog label select { display: block; width: 100%; margin-top: 3px; }
+dialog .radek { justify-content: flex-end; margin-top: 16px; }
+table { border-collapse: collapse; }

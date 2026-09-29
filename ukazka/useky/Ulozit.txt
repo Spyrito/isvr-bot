@@ -1,0 +1,4 @@
+# popis: Uloží subjekt a počká na potvrzení
+dialogy   ano
+klikni    @main text:"Uložit"
+cekej-na  @main text:"Subjekt uložen"

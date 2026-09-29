@@ -1,0 +1,5 @@
+# Vlastní seznamy a vzory. Ve scénáři se píšou jako {titul}, {spisova_znacka}.
+# seznam: možnosti oddělené |, prázdná možnost na konci = někdy nic
+# vzor:   šablona, může obsahovat další proměnné
+seznam titul = Ing.|Mgr.|Bc.|JUDr.|
+vzor   spisova_znacka = NZ {cislo:100-999}/{rok}

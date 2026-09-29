@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <title>Klikač – historie běhů</title>
+  <link rel="stylesheet" href="spolecne.css">
+  <style>
+    body { padding: 0 0 40px; }
+    header { display: flex; align-items: center; gap: 10px; padding: 10px 18px; background: var(--plocha); border-bottom: 1px solid var(--okraj); position: sticky; top: 0; z-index: 2; flex-wrap: wrap; }
+    header b { font-size: 15px; color: var(--akcent); margin-right: 8px; }
+    main { padding: 14px 18px; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+    table { width: 100%; background: var(--plocha); border: 1px solid var(--okraj); border-radius: var(--radius); overflow: hidden; }
+    th, td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--plocha2); vertical-align: top; }
+    th { background: var(--plocha2); font-size: 12px; color: var(--tlumeny); font-weight: 600; }
+    tbody tr { cursor: pointer; }
+    tbody tr:hover { background: var(--plocha2); }
+    tbody tr.vyb { background: var(--akcent-svetly); }
+    .vys { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap; }
+    .vys.ok { background: var(--ok-pozadi); color: var(--ok); }
+    .vys.chyba { background: var(--chyba-pozadi); color: var(--chyba); }
+    .vys.jine { background: var(--varovani-pozadi); color: var(--varovani); }
+    .hodn { color: var(--tlumeny); font-size: 12px; max-width: 520px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    aside { background: var(--plocha); border: 1px solid var(--okraj); border-radius: var(--radius); padding: 12px; position: sticky; top: 64px; }
+    aside h3 { margin: 0 0 8px; font-size: 14px; }
+    .det { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 8px; align-items: center; }
+    .det span:nth-child(3n+1) { color: var(--tlumeny); font-size: 12px; }
+    .det span:nth-child(3n+2) { font-weight: 600; word-break: break-all; }
+    .det button { border: 0; background: none; color: var(--akcent); padding: 0 3px; }
+    #vystupy { margin-top: 18px; }
+    #vystupy a { display: block; padding: 2px 0; color: var(--akcent); cursor: pointer; }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; } aside { position: static; } }
+  </style>
+</head>
+<body>
+  <header>
+    <b>Historie běhů</b>
+    <select id="f-scenar"><option value="">všechny scénáře</option></select>
+    <select id="f-vysledek"><option value="">všechny výsledky</option><option value="OK">jen OK</option><option value="chyba">jen chyby</option></select>
+    <label class="tlumeny">od <input id="f-od" type="date"></label>
+    <label class="tlumeny">do <input id="f-do" type="date"></label>
+    <input id="f-text" type="search" placeholder="hledat v hodnotách (IČO, jméno…)">
+    <span class="tlumeny" id="pocet"></span>
+    <span style="flex:1"></span>
+    <button id="btn-export">Export CSV</button>
+    <button id="btn-smazat" class="st">Smazat historii</button>
+  </header>
+  <main>
+    <div>
+      <table>
+        <thead><tr><th>Čas</th><th>Scénář</th><th>Výsledek</th><th>Hodnoty</th></tr></thead>
+        <tbody id="radky"></tbody>
+      </table>
+      <p id="prazdno" class="tlumeny skryte">Žádné běhy neodpovídají filtru.</p>
+    </div>
+    <aside>
+      <div id="detail"><p class="tlumeny">Klikni na běh pro detail s tlačítky Kopírovat.</p></div>
+      <div id="vystupy"></div>
+    </aside>
+  </main>
+  <script type="module" src="historie.js"></script>
+</body>
+</html>

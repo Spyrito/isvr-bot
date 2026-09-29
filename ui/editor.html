@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <title>Klikač – editor</title>
+  <link rel="stylesheet" href="spolecne.css">
+  <link rel="stylesheet" href="editor.css">
+</head>
+<body>
+  <header>
+    <b class="logo">Klikač</b>
+    <span id="slozka" class="tlumeny"></span>
+    <span id="pristup"></span>
+    <span class="mezera"></span>
+    <button id="btn-nastaveni" title="Složka, import, export, ukázky">Složka a záloha</button>
+    <button id="btn-historie">Historie</button>
+  </header>
+
+  <div class="hlavni">
+    <aside id="strom-panel">
+      <div class="radek strom-nahore">
+        <input id="filtr" type="search" placeholder="Hledat soubor…">
+        <button id="btn-novy" class="hl" title="Nový soubor">+ Nový</button>
+      </div>
+      <div id="strom"></div>
+    </aside>
+
+    <section id="stred">
+      <div class="lista">
+        <span id="nazev-souboru" class="nazev">—</span>
+        <span id="zmeneno" class="tlumeny skryte">● neuloženo</span>
+        <span class="mezera"></span>
+        <button id="btn-ulozit" title="Ctrl+S">Uložit</button>
+        <button id="btn-spustit" class="hl" title="F5 – spustí na poslední stránce aplikace">▶ Spustit</button>
+        <button id="btn-krokovat" title="Krok po kroku">Krok po kroku</button>
+        <button id="btn-odsud" title="Ctrl+Enter – spustí od řádku s kurzorem na aktuální stránce">Spustit odsud</button>
+        <button id="btn-oblibeny" class="ikona" title="Oblíbený úsek (tlačítko v panelu na stránce)">☆</button>
+        <button id="btn-prejmenovat" class="ikona" title="Přejmenovat / přesunout">✎</button>
+        <button id="btn-smazat" class="ikona st" title="Smazat">🗑</button>
+      </div>
+      <div id="zmena-na-disku" class="box var skryte">
+        Soubor se mezitím změnil ve složce.
+        <button id="btn-nacist-disk">Načíst verzi ze složky</button>
+        <button id="btn-nechat">Nechat moje úpravy</button>
+      </div>
+      <div id="editor" class="editor">
+        <div id="cisla" class="cisla"></div>
+        <div class="oblast">
+          <pre id="zvyrazneni" aria-hidden="true"></pre>
+          <textarea id="text" spellcheck="false" wrap="off" autocapitalize="off" autocomplete="off"></textarea>
+        </div>
+      </div>
+      <div id="csv" class="csv skryte"></div>
+      <div id="uvod" class="uvod">
+        <h2>Vyber scénář vlevo</h2>
+        <p class="tlumeny">nebo založ nový tlačítkem <b>+ Nový</b>. Scénář je obyčejný text: jeden řádek = jeden krok.</p>
+      </div>
+    </section>
+
+    <aside id="bok">
+      <nav class="zalozky">
+        <button data-z="kontrola" class="akt">Kontrola <span id="pocet-chyb"></span></button>
+        <button data-z="napoveda">Nápověda</button>
+        <button data-z="data">Data</button>
+        <button data-z="nahrady">Náhrady <span id="pocet-nahrad"></span></button>
+      </nav>
+      <div id="z-kontrola" class="zal"></div>
+      <div id="z-napoveda" class="zal skryte"></div>
+      <div id="z-data" class="zal skryte"></div>
+      <div id="z-nahrady" class="zal skryte"></div>
+    </aside>
+  </div>
+
+  <footer>
+    <span id="pozice">Ř 1, Sl 1</span>
+    <span id="stav-behu" class="stav-behu"></span>
+    <span class="mezera"></span>
+    <span id="cil" class="tlumeny" title="Na této záložce editor spouští scénáře a zkouší selektory"></span>
+  </footer>
+
+  <dialog id="dlg-novy">
+    <form method="dialog">
+      <h3 id="dlg-novy-nadpis">Nový soubor</h3>
+      <label>Složka
+        <select name="slozka">
+          <option value="zalozeni">zalozeni/ – celé založení (začíná otevri)</option>
+          <option value="useky">useky/ – běží na otevřené stránce</option>
+          <option value="data">data/ – seznamy pro generátory</option>
+        </select>
+      </label>
+      <label>Název (podsložka lomítkem, např. sro/Spolecnik)<input name="nazev" required autocomplete="off"></label>
+      <div class="radek"><button value="zrusit" formnovalidate>Zrušit</button><button value="ok" class="hl">OK</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-nastaveni">
+    <h3>Složka a záloha</h3>
+    <div id="nast-stav" class="box info"></div>
+    <div class="radek" style="justify-content:flex-start;margin-top:10px">
+      <button id="btn-vybrat-slozku" class="hl">Vybrat složku Klikac…</button>
+      <button id="btn-povolit">Povolit přístup</button>
+      <button id="btn-interni">Používat úložiště v rozšíření</button>
+    </div>
+    <p class="tlumeny" style="max-width:520px">Ve složce jsou scénáře obyčejné soubory – jdou upravovat v Poznámkovém bloku, sdílet přes síťový disk nebo Git
+      a nezmizí se smazáním profilu Chromu. Kdyby výběr složky na vzdálené ploše nešel, zůstanou scénáře uvnitř rozšíření; zálohuj je exportem.</p>
+    <div class="radek" style="justify-content:flex-start">
+      <button id="btn-import">Import .txt / .zip…</button>
+      <button id="btn-export">Export všeho (.zip)</button>
+      <button id="btn-ukazky">Doplnit ukázkové scénáře</button>
+      <button id="btn-zkratky">Klávesová zkratka…</button>
+      <input id="import-soubor" type="file" accept=".txt,.zip" multiple class="skryte">
+    </div>
+    <div id="nast-hlaska" style="margin-top:10px"></div>
+    <div class="radek"><button id="btn-zavrit-nast">Zavřít</button></div>
+  </dialog>
+
+  <script type="module" src="editor.js"></script>
+</body>
+</html>

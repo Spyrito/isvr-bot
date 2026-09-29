@@ -1,0 +1,9 @@
+# popis: Přidá jednatele
+klikni    @main text:"Přidat jednatele"
+cekej-na  @main #txtJedJmeno
+vypln     @main #txtJedJmeno = {osoba.jmeno}
+vypln     @main #txtJedPrijmeni = {osoba.prijmeni}
+# pole s maskou – píše se po znacích
+pis       @main #txtJedDatumNar = {osoba.datum_nar}
+klikni    @main text:"Potvrdit"
+cekej-na  @main text:"Jednatel přidán"

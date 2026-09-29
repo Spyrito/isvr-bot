@@ -1,0 +1,10 @@
+# Nastavení Klikače
+# adresa = začátek adresy aplikace; relativní „otevri /Subjekty/Novy.aspx“ se doplní z ní
+#          a na stránkách s touto adresou se ukazuje plovoucí panel
+adresa  = https://notar.local
+# pauza mezi kroky v ms
+pauza   = 200
+# jak dlouho nejvýš čekat na prvek (ms)
+timeout = 10000
+# odpověď na confirm(): ano / ne
+dialogy = ano

@@ -1,0 +1,9 @@
+# popis: Založí spolek s jednatelem
+otevri    /Subjekty/Novy.aspx
+vyber     @main #ddlTyp = "Spolek"
+vypln     @main #txtNazev = Spolek {spolek.nazev}
+vypln     @main #txtICO = {spolek.ico}
+pouzij    Adresa
+pouzij    Jednatel
+pouzij    Ulozit
+zapamatuj spz = @main #lblSpisovaZnacka

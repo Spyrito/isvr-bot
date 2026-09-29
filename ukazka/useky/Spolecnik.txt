@@ -1,0 +1,9 @@
+# popis: Přidá společníka do otevřeného řízení
+klikni    @main text:"Přidat společníka"
+cekej-na  @main #txtSpolJmeno
+vypln     @main #txtSpolJmeno = {osoba.jmeno}
+vypln     @main #txtSpolPrijmeni = {osoba.prijmeni}
+vypln     @main #txtSpolRC = {osoba.rc}
+vypln     @main #txtSpolVklad = {cislo:10000-200000}
+klikni    @main text:"Potvrdit"
+cekej-na  @main text:"Společník přidán"

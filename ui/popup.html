@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <title>Klikač</title>
+  <link rel="stylesheet" href="spolecne.css">
+  <style>
+    body { width: 360px; background: var(--plocha); }
+    header { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--akcent); color: #fff; }
+    @media (prefers-color-scheme: dark) { header { color: #10213d; } }
+    header b { flex: 1; font-size: 14px; }
+    header small { opacity: .85; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    main { padding: 10px 12px 12px; display: grid; gap: 10px; }
+    #hledat { width: 100%; }
+    #seznam { max-height: 230px; overflow: auto; border: 1px solid var(--okraj); border-radius: var(--radius); }
+    #seznam h4 { margin: 0; padding: 6px 10px 3px; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--tlumeny); background: var(--plocha2); position: sticky; top: 0; }
+    .pol { padding: 5px 10px; cursor: pointer; border-top: 1px solid transparent; }
+    .pol:hover { background: var(--plocha2); }
+    .pol.vyb { background: var(--akcent-svetly); }
+    .pol b { font-weight: 600; }
+    .pol div { color: var(--tlumeny); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .spust { display: flex; gap: 6px; align-items: center; }
+    .spust input { width: 56px; }
+    .spust .hl { flex: 1; }
+    .dole { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .dole button { padding: 5px 4px; }
+    #beh .radek { margin-top: 6px; }
+    #prazdno { padding: 14px; text-align: center; }
+  </style>
+</head>
+<body>
+  <header><b>Klikač</b><small id="slozka"></small></header>
+  <main>
+    <div id="pristup" class="box var skryte"></div>
+    <div id="beh" class="box info skryte"></div>
+    <input id="hledat" type="search" placeholder="Hledat scénář…" autofocus>
+    <div id="seznam"></div>
+    <div class="spust">
+      <label class="tlumeny" for="pocet">×</label>
+      <input id="pocet" type="number" min="1" max="500" value="1" title="Počet opakování">
+      <button id="spustit" class="hl">Spustit</button>
+      <button id="krokovat" title="Krok po kroku">Krok po kroku</button>
+    </div>
+    <div id="upozorneni" class="tlumeny skryte"></div>
+    <div class="dole">
+      <button id="nahravat" title="Nahrát nový scénář">⏺ Nahrávat</button>
+      <button id="editor">Editor</button>
+      <button id="historie">Historie</button>
+      <button id="panel" title="Zobrazit/skrýt panel na stránce">Panel</button>
+    </div>
+  </main>
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

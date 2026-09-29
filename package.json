@@ -1,0 +1,12 @@
+{
+  "name": "klikac",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome rozšíření pro zakládání testovacích subjektů podle textových scénářů",
+  "scripts": {
+    "test": "node --test test/unit.test.mjs",
+    "e2e": "node test/e2e.mjs",
+    "aplikace": "node test/cvicna-aplikace.mjs",
+    "ikony": "node test/ikony.mjs"
+  }
+}

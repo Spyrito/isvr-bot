@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "Klikač",
+  "version": "0.1.0",
+  "description": "Zakládá testovací subjekty a vyplňuje úseky řízení podle textových scénářů.",
+  "minimum_chrome_version": "116",
+  "permissions": ["storage", "unlimitedStorage", "contextMenus", "scripting", "tabs", "webNavigation", "alarms"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "ui/popup.html",
+    "default_title": "Klikač",
+    "default_icon": { "16": "ikony/16.png", "32": "ikony/32.png", "48": "ikony/48.png" }
+  },
+  "icons": { "16": "ikony/16.png", "32": "ikony/32.png", "48": "ikony/48.png", "128": "ikony/128.png" },
+  "commands": {
+    "zopakovat-usek": {
+      "suggested_key": { "default": "Alt+Shift+K" },
+      "description": "Zopakovat naposledy spuštěný úsek"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["page-dialogs.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true,
+      "world": "MAIN"
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["lib/selektor.js", "content/najdi.js", "content/prehravac.js", "content/nahravac.js", "content/panel.js", "content.js"],
+      "run_at": "document_end",
+      "all_frames": true
+    }
+  ]
+}
