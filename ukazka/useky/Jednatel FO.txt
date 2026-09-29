@@ -1,0 +1,15 @@
+# popis: Přidá jednatele – novou fyzickou osobu s bydlištěm z RÚIAN – do statutárního orgánu
+pridej    uzel:"Statutární orgán" = Člen statutárního orgánu > Přidat fyzickou osobu
+cekej-na  text:"Dohledání osoby v databázi ROB"
+vypln     label:"Jméno" = {osoba.jmeno}
+vypln     label:"Příjmení" = {osoba.prijmeni}
+vypln     label:"Rodné číslo" = {osoba.rc_lomitko}
+klikni    text:"Hledat v OR"
+klikni    text:"Zadat údaje osoby"
+cekej-na  text:"Ruční zadávání fyzické osoby"
+klikni    text:"Vybrat adresu"
+pouzij    Adresa
+klikni    text:"Uložit"
+zmiz      text:"Ruční zadávání fyzické osoby"
+klikni    text:"Uložit"
+cekej-na  uzel:"Statutární orgán > {osoba.jmeno} {osoba.prijmeni}"

@@ -1,0 +1,4 @@
+# popis: Přihlásí se rychlou simulací jako notář (jméno je ve vzoru notar v data/vlastni.txt)
+otevri    /nev/prihlaseni.html
+klikni    text:"{notar}"
+cekej-na  text:"Přihlášený uživatel"

@@ -1,0 +1,11 @@
+# popis: Prvozápis s.r.o. se sídlem, společníkem, jednatelem, kapitálem, IČ a předmětem podnikání
+# Do veřejného rejstříku se nezapisuje: na konci se běh zastaví, zápis zkontroluješ a zapíšeš ručně.
+pouzij    Prihlaseni
+pouzij    Zalozeni zapisu sro
+pouzij    Zakladni kapital
+pouzij    Identifikacni cislo
+pouzij    Spolecnik FO
+pouzij    Statutarni organ
+pouzij    Jednatel FO
+pouzij    Predmet podnikani
+rucne     Zkontroluj zápis a zapiš ho do veřejného rejstříku ručně, pak dej Pokračovat

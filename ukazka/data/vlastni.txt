@@ -1,5 +1,22 @@
-# Vlastní seznamy a vzory. Ve scénáři se píšou jako {titul}, {spisova_znacka}.
-# seznam: možnosti oddělené |, prázdná možnost na konci = někdy nic
+# Vlastní seznamy a vzory. Ve scénáři se píšou jako {notar}, {vklad}, {predmet_podnikani}.
+# seznam: možnosti oddělené |, prázdná možnost na konci = někdy nic; vybírá se náhodně
 # vzor:   šablona, může obsahovat další proměnné
+# Scénář je může přepsat příkazem „nastav vklad = 50000“.
+
+# za koho se přihlašovat (rychlá simulace přihlášení)
+vzor   notar = David Notář
+
+# rejstříkový soud podle sídla: MSPH (Praha a Středočeský kraj), KSCB (Jihočeský), KSPL (Plzeňský, Karlovarský),
+# KSUL (Ústecký, Liberecký), KSHK (Královéhradecký, Pardubický), KSBR (Jihomoravský, Vysočina, Zlínský),
+# KSOS (Moravskoslezský, Olomoucký). Náhodně: seznam soud = MSPH|KSBR|KSOS|KSPL|KSUL|KSHK|KSCB
+vzor   soud = MSPH
+
+# s.r.o.
+vzor   kapital = 100000
+vzor   vklad = {kapital}
+vzor   podil = 100
+vzor   pocet_jednatelu = 1
+seznam zpusob_jednani = Jednatel zastupuje společnost samostatně.|Za společnost jedná jednatel samostatně.
+seznam predmet_podnikani = Výroba, obchod a služby neuvedené v přílohách 1 až 3 živnostenského zákona|Pronájem nemovitostí, bytů a nebytových prostor|Činnost účetních poradců, vedení účetnictví, vedení daňové evidence
+
 seznam titul = Ing.|Mgr.|Bc.|JUDr.|
-vzor   spisova_znacka = NZ {cislo:100-999}/{rok}

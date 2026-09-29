@@ -5,10 +5,16 @@
   const S = globalThis.KlikacSelektor;
 
   const KLIKATELNE = [
-    'a[href]', 'a[onclick]', 'button', 'input[type=submit]', 'input[type=button]', 'input[type=reset]', 'input[type=image]',
+    // „a“ i bez href: Wicket váže kliknutí na odkazy přes id (href chybí nebo je javascript:;)
+    'a', 'button', 'input[type=submit]', 'input[type=button]', 'input[type=reset]', 'input[type=image]',
     'input[type=checkbox]', 'input[type=radio]', '[role=button]', '[role=tab]', '[role=link]', '[role=menuitem]',
-    '[onclick]', 'label', 'summary', 'area',
+    '[onclick]', 'label', 'summary', 'area', '.ui-menu-item',
   ].join(',');
+  // Modální okna (Wicket, jQuery UI, ARIA): když je některé otevřené, hledá se nejdřív v tom nejvyšším.
+  const MODALY = '.wicket-modal, .ui-dialog, [role=dialog], [aria-modal=true]';
+  // Uzly stromu údajů (ISVR): odkaz (údaj) nebo span (skupina „Společníci“) s třídou hint; plný název bývá
+  // v data-tooltip-data, text je zkrácený („Systém statutárního... [V.D.]“).
+  const UZLY = '.tree-node .tree-nc > .hint';
   const POLE = [
     'input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=image]):not([type=reset])',
     'select', 'textarea', '[contenteditable=""]', '[contenteditable=true]',
@@ -102,7 +108,8 @@
 
   const unikatni = (arr) => Array.from(new Set(arr.filter(Boolean)));
 
-  // text:"…" pro klikání: nejdřív přesná shoda na tlačítku/odkazu, pak bez ohledu na velikost, pak „obsahuje“.
+  // text:"…" pro klikání: přesná shoda na tlačítku/odkazu, pak bez ohledu na velikost, pak textový uzel.
+  // Záměrně bez „obsahuje“: text:"Zrušit" nesmí kliknout na „Zrušit zápis do VR“.
   function hledejKlikatelne(doc, text) {
     const t = norm(text);
     const tl = t.toLowerCase();
@@ -112,9 +119,7 @@
     if (r.length) return r;
     r = kand.filter((e) => texty.get(e).toLowerCase() === tl);
     if (r.length) return r;
-    r = unikatni(textoveUzly(doc, (s) => s.toLowerCase() === tl).map((n) => n.parentElement.closest(KLIKATELNE) || n.parentElement));
-    if (r.length) return r;
-    return kand.filter((e) => texty.get(e).toLowerCase().includes(tl));
+    return unikatni(textoveUzly(doc, (s) => s.toLowerCase() === tl).map((n) => n.parentElement.closest(KLIKATELNE) || n.parentElement));
   }
 
   // text:"…" pro čekání a zapamatování: nejmenší prvky, jejichž text obsahuje hledaný text.
@@ -161,6 +166,47 @@
     return [];
   }
 
+  // uzel:"Společníci" – uzel stromu podle plného názvu nebo textu bez „[V.D.]“; nejdřív přesně, pak začátek.
+  // uzel:"Petr Novák > Podíl" – cesta: další uzel se hledá jen pod předchozím.
+  function uzlyPodle(uzly, text) {
+    const t = norm(text).toLowerCase();
+    const nazvy = (a) => [a.getAttribute('data-tooltip-data'), textPrvku(a).replace(/\s*\[[^\]]*\]\s*$/, '')].map((s) => norm(s).toLowerCase());
+    for (const test of [(s) => s === t, (s) => s.startsWith(t) || (s.endsWith('...') && t.startsWith(s.slice(0, -3)))]) {
+      const r = uzly.filter((a) => nazvy(a).some((s) => s && test(s)));
+      if (r.length) return r;
+    }
+    return [];
+  }
+
+  function hledejUzel(doc, text) {
+    const cesta = String(text).split('>').map(norm).filter(Boolean);
+    let r = uzlyPodle(Array.from(doc.querySelectorAll(UZLY)), cesta[0] || '');
+    for (const cast of cesta.slice(1)) {
+      const pod = r.flatMap((u) => {
+        const vetev = u.closest('.tree-branch');
+        const podstrom = vetev && vetev.querySelector(':scope > .tree-subtree');
+        return podstrom ? Array.from(podstrom.querySelectorAll(UZLY)) : [];
+      });
+      r = uzlyPodle(unikatni(pod), cast);
+    }
+    return r;
+  }
+
+  // Nejvyšší otevřené modální okno v dokumentu (nejvyšší z-index, při shodě poslední v DOM).
+  function horniModal(doc) {
+    let nej = null;
+    let nejZ = -Infinity;
+    for (const m of doc.querySelectorAll(MODALY)) {
+      if (!viditelny(m)) continue;
+      const z = parseInt(doc.defaultView.getComputedStyle(m).zIndex, 10) || 0;
+      if (z >= nejZ) {
+        nej = m;
+        nejZ = z;
+      }
+    }
+    return nej;
+  }
+
   // Prvky pro selektor. ucel: 'klik' (text: hledá tlačítka) nebo 'text' (text: hledá jakýkoli text).
   // Vyhodí ChybaHledani, když rámec (zatím) neexistuje, a Error pro neplatný selektor.
   function prvky(selText, ucel = 'klik') {
@@ -188,10 +234,16 @@
         }
       } else if (sel.typ === 'label') {
         r = hledejLabel(doc, sel.hodnota);
+      } else if (sel.typ === 'uzel') {
+        r = hledejUzel(doc, sel.hodnota);
       } else {
         r = ucel === 'klik' ? hledejKlikatelne(doc, sel.hodnota) : hledejText(doc, sel.hodnota);
       }
-      out.push(...r.filter((e) => e && !e.closest('[data-klikac]')));
+      r = r.filter((e) => e && !e.closest('[data-klikac]'));
+      // Otevřený modal zakrývá stránku: „Uložit“ v modalu má přednost před „Uložit“ pod ním.
+      const modal = horniModal(doc);
+      if (modal && r.some((e) => modal.contains(e))) r = r.filter((e) => modal.contains(e));
+      out.push(...r);
     }
     return out;
   }
@@ -264,7 +316,12 @@
     return casti.join(' > ');
   }
 
+  // Stránka Apache Wicket (ISVR): id prvků mají počítadlo na konci (zalozitZapis31), při dalším načtení jiné.
+  const jeWicket = (doc) => !!doc.querySelector('script[src*="wicket"], #wicketDebugLink, [id^="wicketAjaxDebug"]');
+  const generovaneId = (id) => /[0-9a-f]{2,}(-\d+)?$/.test(id) || /^id[0-9a-f]+$/.test(id);
+
   // Pořadí jako v návrhu: id → name → text tlačítka → CSS cesta; s rámcem (@main).
+  // Na stránkách Wicketu se generovaná id přeskočí, uzel stromu dostane uzel:"…" a name jen konec cesty.
   function selektorPro(el) {
     const doc = el.ownerDocument;
     const ram = cestaRamce(doc.defaultView);
@@ -276,11 +333,29 @@
         return false;
       }
     };
-    if (el.id && !/^\d/.test(el.id) && jedinecny('#' + CSS.escape(el.id))) return pred + '#' + CSS.escape(el.id);
+    const wicket = jeWicket(doc);
+    if (el.id && !/^\d/.test(el.id) && !(wicket && generovaneId(el.id)) && jedinecny('#' + CSS.escape(el.id))) return pred + '#' + CSS.escape(el.id);
+    if (wicket) {
+      const uzel = el.closest(UZLY);
+      if (uzel) {
+        const nazev = norm(uzel.getAttribute('data-tooltip-data') || textPrvku(uzel));
+        if (nazev && !nazev.includes('"') && hledejUzel(doc, nazev)[0] === uzel) return pred + `uzel:"${nazev}"`;
+      }
+    }
     const jm = el.getAttribute('name');
     if (jm && !jm.includes('"')) {
-      let css = `[name="${jm}"]`;
-      if (el.type === 'radio' && el.value && !el.value.includes('"')) css += `[value="${el.value}"]`;
+      const radio = el.type === 'radio' && el.value && !el.value.includes('"') ? `[value="${el.value}"]` : '';
+      // Wicket skládá name z cesty komponent (main:…:branches:24:…) – stačí konec cesty, pokud je jedinečný.
+      if (wicket && jm.includes(':')) {
+        const casti = jm.split(':');
+        for (let n = 1; n < casti.length; n++) {
+          const konec = casti.slice(-n).join(':');
+          if (/^\d+$/.test(casti[casti.length - n])) continue;
+          const css = `[name$=":${konec}"]${radio}`;
+          if (jedinecny(css)) return pred + css;
+        }
+      }
+      const css = `[name="${jm}"]${radio}`;
       if (jedinecny(css)) return pred + css;
     }
     if (jeTlacitko(el)) {
@@ -295,6 +370,6 @@
 
   K.najdi = {
     ChybaHledani, norm, prvky, viditelny, aktivni, textPrvku, zvyrazni, zrusZvyrazneni,
-    cestaRamce, selektorPro, vsechnyDokumenty, POLE, KLIKATELNE,
+    cestaRamce, selektorPro, vsechnyDokumenty, horniModal, POLE, KLIKATELNE,
   };
 })();

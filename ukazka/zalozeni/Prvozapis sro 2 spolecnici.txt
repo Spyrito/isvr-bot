@@ -1,0 +1,14 @@
+# popis: Prvozápis s.r.o. se dvěma společníky (každý 50 %) a dvěma jednateli
+nastav    kapital = 200000
+nastav    vklad = 100000
+nastav    podil = 50
+nastav    pocet_jednatelu = 2
+pouzij    Prihlaseni
+pouzij    Zalozeni zapisu sro
+pouzij    Zakladni kapital
+pouzij    Identifikacni cislo
+pouzij    Spolecnik FO 2x
+pouzij    Statutarni organ
+pouzij    Jednatel FO 2x
+pouzij    Predmet podnikani
+rucne     Zkontroluj zápis a zapiš ho do veřejného rejstříku ručně, pak dej Pokračovat

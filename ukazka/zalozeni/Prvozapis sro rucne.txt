@@ -1,0 +1,5 @@
+# popis: Založí zápis s.r.o. (název, sídlo, lustrace), údaje pak doplníš ručně nebo úseky z panelu
+pouzij    Prihlaseni
+pouzij    Zalozeni zapisu sro
+# Během pauzy můžeš v aplikaci pracovat a spouštět úseky z panelu (Spolecnik FO, Jednatel FO, …).
+rucne     Doplň údaje zápisu a dej Pokračovat

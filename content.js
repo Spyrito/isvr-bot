@@ -43,6 +43,10 @@
         if (!horni) return false;
         K.prehravac.proved(z.krok).then(odpoved);
         return true;
+      case 'klid':
+        if (!horni) return false;
+        K.prehravac.klid(z.timeout, z.chyba).then(odpoved);
+        return true;
       case 'zvyrazni':
         if (!horni) return false;
         odpoved(K.prehravac.zvyrazni(z.sel, z.barva, z.trvale));

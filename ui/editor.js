@@ -407,8 +407,8 @@ function zkontroluj() {
       }
     }
     const prvni = r.kroky.find((k) => k.soubor === aktualni);
-    if (aktualni.startsWith('zalozeni/') && prvni && prvni.prikaz !== 'otevri') {
-      vysledkyKontroly.push({ soubor: aktualni, radek: prvni.radek, uroven: 'varovani', zprava: 'Celé založení obvykle začíná příkazem otevri (jinak běží na právě otevřené stránce).' });
+    if (aktualni.startsWith('zalozeni/') && prvni && prvni.prikaz !== 'otevri' && prvni.prikaz !== 'pouzij') {
+      vysledkyKontroly.push({ soubor: aktualni, radek: prvni.radek, uroven: 'varovani', zprava: 'Celé založení obvykle začíná příkazem otevri nebo pouzij Prihlaseni (jinak běží na právě otevřené stránce).' });
     }
     if (r.kroky.length) vysledkyKontroly.info = `${r.kroky.length} kroků po rozbalení úseků`;
   }
@@ -444,6 +444,8 @@ function vykresliNapovedu() {
     ['#txtJmeno, [name="prijmeni"]', 'CSS selektor'],
     ['text:"Uložit"', 'tlačítko nebo odkaz s tímto textem; u cekej-na jakýkoli text'],
     ['label:"Příjmení"', 'pole u popisku (&lt;label&gt; nebo vedlejší buňka tabulky)'],
+    ['uzel:"Společníci"', 'uzel stromu údajů (ISVR); uzel:"Petr Novák &gt; Podíl" hledá pod uzlem'],
+    ['[name$=":pocetClenu"]', 'pole podle konce name (ve Wicketu se id mění, konec name ne)'],
     ['xpath://td[2]/input', 'XPath pro obtížné případy'],
     ['@main #txtJmeno', 'hledá jen v rámci main (framesety), vnořené @a/b'],
   ];
@@ -528,6 +530,7 @@ function navrhni(h, sel) {
   if (/^CZ\d{8}$/i.test(h)) return ['{firma.dic}', 'DIČ'];
   if (/^\d{1,2}\.\s?\d{1,2}\.\s?\d{4}$/.test(h)) return ['{osoba.datum_nar}', 'datum'];
   if (/^\d{3}\s?\d{2}$/.test(h) && /ps[cč]|zip/i.test(sel)) return ['{adresa.psc}', 'PSČ'];
+  if (/^\d{5,9}$/.test(h) && /ruian/i.test(sel)) return ['{adresa.ruian}', 'kód adresy RÚIAN'];
   if (/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(h)) return ['{osoba.email}', 'e-mail'];
   if (/^(\+420\s?)?[67]\d{2}\s?\d{3}\s?\d{3}$/.test(h)) return ['{osoba.telefon}', 'telefon'];
   if (JMENA.has(h)) return ['{osoba.jmeno}', 'křestní jméno'];
@@ -661,7 +664,7 @@ function dialogNovy({ nadpis = 'Nový soubor', slozka = 'useky', nazev = '' } = 
 }
 
 const SABLONY = {
-  zalozeni: '# popis: \notevri    /Subjekty/Novy.aspx\n',
+  zalozeni: '# popis: \npouzij    Prihlaseni\n',
   useky: '# popis: \n',
   data: '# jedno slovo nebo vzor na řádek\n',
 };

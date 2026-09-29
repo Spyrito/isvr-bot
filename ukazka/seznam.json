@@ -1,12 +1,18 @@
 [
  "data/vlastni.txt",
  "nastaveni.txt",
+ "useky/Adresa sidla.txt",
  "useky/Adresa.txt",
- "useky/Jednatel.txt",
- "useky/Spolecnik.txt",
- "useky/Ulozit.txt",
- "zalozeni/Zaloz FO.txt",
- "zalozeni/Zaloz spolek.txt",
- "zalozeni/Zaloz sro rucne.txt",
- "zalozeni/Zaloz sro.txt"
+ "useky/Identifikacni cislo.txt",
+ "useky/Jednatel FO.txt",
+ "useky/Predmet podnikani.txt",
+ "useky/Prihlaseni.txt",
+ "useky/Sidlo.txt",
+ "useky/Spolecnik FO.txt",
+ "useky/Statutarni organ.txt",
+ "useky/Zakladni kapital.txt",
+ "useky/Zalozeni zapisu sro.txt",
+ "zalozeni/Prvozapis sro 2 spolecnici.txt",
+ "zalozeni/Prvozapis sro rucne.txt",
+ "zalozeni/Prvozapis sro.txt"
 ]

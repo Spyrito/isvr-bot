@@ -1,0 +1,5 @@
+# popis: Vyplní sídlo nebo bydliště
+vypln     @main #txtUlice = {adresa.ulice}
+vypln     @main #txtCP = {adresa.cp}
+vypln     @main #txtObec = {adresa.mesto}
+vypln     @main #txtPSC = {adresa.psc}

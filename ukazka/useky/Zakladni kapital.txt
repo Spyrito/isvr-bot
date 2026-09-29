@@ -1,0 +1,4 @@
+# popis: Vyplní základní kapitál (vzor kapital v data/vlastni.txt)
+klikni    uzel:"Základní kapitál"
+vypln     [name$="zakladniKapital:containerFields:moneyBaseText"] = {kapital}
+klikni    text:"Uložit"

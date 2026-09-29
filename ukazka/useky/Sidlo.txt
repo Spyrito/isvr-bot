@@ -1,0 +1,7 @@
+# popis: Změní sídlo subjektu na náhodnou adresu z RÚIAN v obvodu soudu {soud}
+klikni    uzel:"Sídlo"
+klikni    text:"Změnit"
+cekej-na  label:"RUIAN"
+klikni    text:"Vymazat formulář"
+pouzij    Adresa sidla
+klikni    text:"Uložit"

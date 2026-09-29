@@ -1,0 +1,5 @@
+# popis: Přidělí subjektu nové IČ a zapíše ho do výstupu
+klikni    uzel:"Identifikační číslo"
+klikni    text:"Přidělit nové IČ"
+zapamatuj ico = [name$="icoComponent:value"] /(\d{8})/
+klikni    text:"Uložit"

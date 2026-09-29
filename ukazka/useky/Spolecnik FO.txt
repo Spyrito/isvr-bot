@@ -1,0 +1,25 @@
+# popis: Přidá společníka – novou fyzickou osobu s bydlištěm z RÚIAN – a vyplní jeho podíl
+# Vklad {vklad} Kč, obchodní podíl {podil} % (výchozí v data/vlastni.txt, jinak „nastav vklad = …“).
+pridej    uzel:"Společníci" = Společník > Přidat fyzickou osobu
+cekej-na  text:"Dohledání osoby v databázi ROB"
+# osoba se nejdřív hledá v registrech; nová osoba tam není, proto „Zadat údaje osoby“
+vypln     label:"Jméno" = {osoba.jmeno}
+vypln     label:"Příjmení" = {osoba.prijmeni}
+vypln     label:"Rodné číslo" = {osoba.rc_lomitko}
+klikni    text:"Hledat v OR"
+klikni    text:"Zadat údaje osoby"
+cekej-na  text:"Ruční zadávání fyzické osoby"
+klikni    text:"Vybrat adresu"
+pouzij    Adresa
+klikni    text:"Uložit"
+zmiz      text:"Ruční zadávání fyzické osoby"
+klikni    text:"Uložit"
+# podíl je podřízený údaj společníka
+klikni    uzel:"{osoba.jmeno} {osoba.prijmeni} > Podíl"
+vypln     [name$="vkladComponent:containerFields:moneyBaseText"] = {vklad}
+vyber     [name$="splaceniComponent:containerFields:typ"] = v procentech
+vypln     [name$="splaceniComponent:containerFields:moneyBaseText"] = 100
+vyber     [name$="obchodniPodilComponent:containerFields:typ"] = v procentech
+vypln     [name$="obchodniPodilComponent:containerFields:moneyBaseText"] = {podil}
+vypln     [name$="podilComponent:druhPodilu"] = základní
+klikni    text:"Uložit"

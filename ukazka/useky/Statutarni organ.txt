@@ -1,0 +1,13 @@
+# popis: Nastaví individuální statutární orgán (jednatelé), počet jednatelů a způsob jednání
+# Pořadí určuje aplikace: podřízený údaj jde upravit až po uložení nadřízeného.
+klikni    uzel:"Systém statutárního orgánu"
+zaskrtni  label:"Individuální"
+klikni    text:"Uložit"
+klikni    uzel:"Statutární orgán"
+klikni    text:"Uložit"
+klikni    uzel:"Statutární orgán > Počet jednatelů"
+vypln     [name$="insertForm:pocetClenu"] = {pocet_jednatelu}
+klikni    text:"Uložit"
+klikni    uzel:"Statutární orgán > Způsob jednání"
+vypln     [name$="insertForm:value"] = {zpusob_jednani}
+klikni    text:"Uložit"

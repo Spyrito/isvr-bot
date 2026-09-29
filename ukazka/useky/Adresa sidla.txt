@@ -1,0 +1,8 @@
+# popis: V okně zadání adresy vybere sídlo z RÚIAN v obvodu rejstříkového soudu {soud}
+# Podle sídla se subjektu přiřadí rejstříkový soud; soud je ve vzoru soud v data/vlastni.txt,
+# ve scénáři ho změníš příkazem „nastav soud = KSBR“ (MSPH, KSBR, KSOS, KSPL, KSUL, KSHK, KSCB).
+nova      adresa soud={soud}
+vypln     label:"RUIAN" = {adresa.ruian}
+klikni    text:"Dohledat adresu"
+cekej-na  text:"Adresa byla dohledána podle RUIAN"
+klikni    text:"Vybrat"

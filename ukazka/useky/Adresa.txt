@@ -1,5 +1,6 @@
-# popis: Vyplní sídlo nebo bydliště
-vypln     @main #txtUlice = {adresa.ulice}
-vypln     @main #txtCP = {adresa.cp}
-vypln     @main #txtObec = {adresa.mesto}
-vypln     @main #txtPSC = {adresa.psc}
+# popis: V otevřeném okně zadání adresy dohledá skutečnou adresu podle kódu RÚIAN a vybere ji
+# Adresa je náhodná z databáze RÚIAN (vestavěná, nebo data/ruian.txt).
+vypln     label:"RUIAN" = {adresa.ruian}
+klikni    text:"Dohledat adresu"
+cekej-na  text:"Adresa byla dohledána podle RUIAN"
+klikni    text:"Vybrat"

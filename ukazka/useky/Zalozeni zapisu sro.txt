@@ -1,0 +1,19 @@
+# popis: Na ploše Kancelář založí prvozápis s.r.o. s náhodným názvem a sídlem u soudu {soud} a otevře editor
+# soud se určí jednou pro celé založení (vzor může být i náhodný seznam)
+nastav    soud = {soud}
+klikni    text:"Kancelář"
+klikni    text:"Založit zápis"
+vyber     label:"Typ zápisu" = Prvozápis notářem
+vypln     label:"Subjekt" = {firma.nazev_unik} s.r.o.
+# výběr právní formy znovu načte stránku
+vyber     label:"Právní forma" = Společnost s ručením omezeným
+klikni    text:"Zadat adresu"
+pouzij    Adresa sidla
+# lustrace: název nesmí kolidovat s existujícím subjektem
+klikni    text:"Lustrovat název subjektu"
+cekej-na  text:"Můžete založit zápis"
+klikni    text:"Založit zápis"
+cekej-na  uzel:"Sídlo"
+zapamatuj fj = text:"Prvozápis notářem" /(Fj \d+\/\d+\/\S+)/
+# kontrola: číslo zápisu končí zkratkou soudu podle sídla (Fj 903/2026/MSPH)
+cekej-na  text:"/{soud}"

@@ -4,16 +4,23 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { rozparsujScenar, rozparsujRadek, rozdelNaRovnitku } from '../lib/dsl.js';
 import { rozbal, najdiSoubor, prectiNastaveni } from '../lib/soubory.js';
-import { Data, dosad, vyhodnot, sledovaneKlice, zkontrolujVyraz } from '../lib/promenne.js';
+import { Data, dosad, vyhodnot, sledovaneKlice, zkontrolujVyraz, najdiVyrazy } from '../lib/promenne.js';
+import { RUIAN } from '../generatory/ruian-data.js';
+import { SOUDY } from '../generatory/adresa.js';
+import { entity } from '../generatory/registr.js';
 import { jePlatneRc } from '../generatory/osoba.js';
 import { jePlatneIco } from '../generatory/firma.js';
 import { jePlatneCisloUctu } from '../generatory/ucet.js';
 import { funkce } from '../generatory/index.js';
 import { pridejRadek, rozparsujCsv } from '../lib/csv.js';
 
-const ukazky = Object.fromEntries(
-  JSON.parse(readFileSync(new URL('../ukazka/seznam.json', import.meta.url))).map((c) => [c, readFileSync(new URL('../ukazka/' + c, import.meta.url), 'utf8')]),
-);
+const nactiSlozku = (slozka) =>
+  Object.fromEntries(
+    JSON.parse(readFileSync(new URL(`../${slozka}/seznam.json`, import.meta.url))).map((c) => [c, readFileSync(new URL(`../${slozka}/${c}`, import.meta.url), 'utf8')]),
+  );
+// scénáře pro cvičnou aplikaci (ASP.NET) a ukázky pro ISVR, které dostane uživatel
+const ukazky = nactiSlozku('test/cvicna');
+const isvr = nactiSlozku('ukazka');
 
 function novyBeh(soubor = 'zalozeni/Zaloz sro.txt') {
   const r = rozbal(soubor, ukazky);
@@ -67,6 +74,64 @@ test('všechny ukázky jsou bez chyb a rozbalí se', () => {
   const r = rozbal('zalozeni/Zaloz sro.txt', ukazky);
   assert.equal(r.rozsahy.length, 1 + 1 + 2 + 1); // kořen, Adresa, 2× Spolecnik, Ulozit
   assert.equal(r.kroky.filter((k) => k.soubor === 'useky/Spolecnik.txt').length, 16);
+});
+
+test('ukázky pro ISVR: bez chyb, rozbalí se, proměnné existují', () => {
+  const data = new Data(isvr);
+  for (const c of Object.keys(isvr).filter((c) => /^(zalozeni|useky)\//.test(c))) {
+    const r = rozbal(c, isvr);
+    assert.deepEqual(r.chyby, [], c);
+    for (const k of r.kroky) {
+      for (const t of [k.sel, k.hodnota]) {
+        if (!t) continue;
+        for (const { vyraz } of najdiVyrazy(t)) assert.equal(zkontrolujVyraz(vyraz, data), null, `${k.soubor}:${k.radek} {${vyraz}}`);
+      }
+    }
+  }
+  const r = rozbal('zalozeni/Prvozapis sro 2 spolecnici.txt', isvr);
+  assert.equal(r.rozsahy.filter((x) => x.soubor === 'useky/Spolecnik FO.txt').length, 2);
+  assert.equal(r.rozsahy.filter((x) => x.soubor === 'useky/Adresa.txt').length, 2 + 2); // bydliště 2 společníků a 2 jednatelů
+  assert.equal(r.rozsahy.filter((x) => x.soubor === 'useky/Adresa sidla.txt').length, 1);
+  const nova = rozparsujRadek('nova adresa soud={soud}', 1);
+  assert.deepEqual([nova.entita, nova.volby], ['adresa', { soud: '{soud}' }]);
+  const menu = rozparsujRadek('pridej uzel:"Společníci" = Společník > Přidat fyzickou osobu', 1);
+  assert.deepEqual([menu.prikaz, menu.sel, menu.hodnota], ['pridej', 'uzel:"Společníci"', 'Společník > Přidat fyzickou osobu']);
+  assert.equal(prectiNastaveni(isvr['nastaveni.txt']).chyba, 'text:"Nastala interní chyba"');
+});
+
+test('adresa je skutečné adresní místo z RÚIAN', () => {
+  assert.ok(RUIAN.length >= 500);
+  const kody = new Set();
+  for (const r of RUIAN) {
+    const [kod, ulice, cp, co, cast, obec, psc] = r.split('|');
+    assert.match(kod, /^\d{5,9}$/, r);
+    assert.ok(cp && cast && obec, r);
+    assert.match(psc, /^\d{5}$/, r);
+    kody.add(kod);
+    void ulice, co;
+  }
+  assert.equal(kody.size, RUIAN.length, 'kódy se neopakují');
+  assert.ok(RUIAN.includes('21704970|Vodičkova|704|36|Nové Město|Praha|11000|MSPH'));
+  // každý rejstříkový soud má adresy a sídlo jde vybrat podle soudu
+  for (const soud of Object.keys(SOUDY)) {
+    assert.ok(RUIAN.filter((r) => r.endsWith('|' + soud)).length >= 30, soud);
+    for (let i = 0; i < 20; i++) {
+      const a = entity.adresa.vytvor(new Data(isvr).ctx, { soud: soud.toLowerCase() });
+      assert.equal(a.soud, soud);
+      assert.equal(a.soud_nazev, SOUDY[soud]);
+    }
+  }
+  assert.throws(() => entity.adresa.vytvor(new Data(isvr).ctx, { soud: 'XYZ' }), /neznámý rejstříkový soud/);
+  assert.equal(RUIAN.find((r) => r.includes('|Brno|')).split('|')[7], 'KSBR');
+  assert.equal(RUIAN.find((r) => r.includes('|Kladno|')).split('|')[7], 'MSPH');
+  const data = new Data(isvr);
+  const beh = novyBeh();
+  const rozsah = { id: 1, nazev: 'adresa', rodic: 0 };
+  const V = (v) => vyhodnot(v, beh, rozsah, data);
+  const radek = RUIAN.find((x) => x.startsWith(V('adresa.ruian') + '|'));
+  assert.ok(radek);
+  assert.equal(radek.split('|')[5], V('adresa.mesto'));
+  assert.ok(V('adresa.cela').includes(V('adresa.psc_mezera')));
 });
 
 test('pouzij hledá v useky/, zalozeni/ a hlásí cyklus', () => {

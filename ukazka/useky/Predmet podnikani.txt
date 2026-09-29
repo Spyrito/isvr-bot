@@ -1,0 +1,4 @@
+# popis: Přidá předmět podnikání (první vytvoří skupinu Předměty podnikání, další se přidají do ní)
+pridej    strom = Předměty podnikání
+vypln     [name$="insertForm:value"] = {predmet_podnikani}
+klikni    text:"Uložit"

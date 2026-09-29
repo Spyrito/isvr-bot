@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { spustAplikaci } from './cvicna-aplikace.mjs';
 
 const require = createRequire(import.meta.url);
@@ -73,13 +74,18 @@ const uloziste = (k) => ext.evaluate((k) => chrome.storage.local.get(k).then((r)
 const historie = async () => (await uloziste('historie')) || [];
 const ulozene = async () => (await (await fetch(`${APP}/api/ulozene`)).json());
 
-// nastavení na cvičnou aplikaci (ukázky se nahrávají při instalaci)
+// Při instalaci se nahrají ukázky pro ISVR; cvičná aplikace má vlastní scénáře v test/cvicna/.
 await cekej(async () => Object.keys((await uloziste('soubory')) || {}).length >= 10, 'ukázkové scénáře');
-await ext.evaluate(async (app) => {
-  const { soubory } = await chrome.storage.local.get('soubory');
-  soubory['nastaveni.txt'] = soubory['nastaveni.txt'].replace(/^adresa.*$/m, `adresa  = ${app}`).replace(/^pauza.*$/m, 'pauza   = 30');
-  await chrome.storage.local.set({ soubory });
-}, APP);
+const CVICNA = resolve(EXT, 'test/cvicna');
+const cvicne = Object.fromEntries(JSON.parse(readFileSync(resolve(CVICNA, 'seznam.json'), 'utf8')).map((c) => [c, readFileSync(resolve(CVICNA, c), 'utf8')]));
+await ext.evaluate(
+  async ({ app, cvicne }) => {
+    const soubory = { ...cvicne };
+    soubory['nastaveni.txt'] = soubory['nastaveni.txt'].replace(/^adresa.*$/m, `adresa  = ${app}`).replace(/^pauza.*$/m, 'pauza   = 30');
+    await chrome.storage.local.set({ soubory });
+  },
+  { app: APP, cvicne },
+);
 
 const app = await ctx.newPage();
 app.on('pageerror', (e) => chyby.push('aplikace: ' + e.message));

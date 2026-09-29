@@ -1,10 +1,14 @@
 # Nastavení Klikače
-# adresa = začátek adresy aplikace; relativní „otevri /Subjekty/Novy.aspx“ se doplní z ní
+# adresa = začátek adresy aplikace; relativní „otevri /nev/prihlaseni.html“ se doplní z ní
 #          a na stránkách s touto adresou se ukazuje plovoucí panel
-adresa  = https://notar.local
+adresa  = http://192.168.215.125:8080
 # pauza mezi kroky v ms
 pauza   = 200
 # jak dlouho nejvýš čekat na prvek (ms)
-timeout = 10000
+timeout = 15000
 # odpověď na confirm(): ano / ne
 dialogy = ano
+# když se po akci na stránce objeví tento prvek, běh se zastaví s chybou
+chyba   = text:"Nastala interní chyba"
+# tlačítka, na která Klikač nikdy neklikne (text tlačítka, oddělené |); tyhle kroky dělej ručně
+zakazane = Zapsat do veřejného rejstříku | Zrušit zápis do VR | Zrušit zápis

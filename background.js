@@ -109,6 +109,21 @@ async function cekejNaKlid(tabId, prodleva = 300) {
   await zajistiSkript(tabId);
 }
 
+// Po akci: počká na doběhnutí AJAXu (Wicket) a zkontroluje, jestli aplikace nehlásí chybu.
+// Když se stránka mezitím znovu načítá, počká na klid a zkusí to znovu.
+async function cekejNaAjax(tabId, beh) {
+  for (let pokus = 0; pokus < 3; pokus++) {
+    try {
+      const r = await chrome.tabs.sendMessage(tabId, { typ: 'klid', timeout: Math.max(beh.nast.timeout, 15000), chyba: beh.nast.chyba || '' }, { frameId: 0 });
+      if (r) return r;
+    } catch {
+      /* stránka se načítá */
+    }
+    await cekejNaKlid(tabId, 200);
+  }
+  return { ok: true };
+}
+
 function nedoruceno(e) {
   return /Receiving end does not exist|Could not establish connection/i.test(String(e && e.message));
 }
@@ -187,7 +202,7 @@ async function vytvorBeh(tabId, soubor, vse, volby) {
     krokovatOdZacatku: !!volby.krokovat,
     pocet: volby.pocet || 1,
     iterace: volby.iterace || 1,
-    nast: { pauza: nast.pauza, timeout: nast.timeout, dialogy: nast.dialogy, adresa: nast.adresa },
+    nast: { pauza: nast.pauza, timeout: nast.timeout, dialogy: nast.dialogy, adresa: nast.adresa, chyba: nast.chyba || '', zakazane: nast.zakazane || '' },
     promenne: {},
     globalni: {},
     hodnoty: {},
@@ -365,7 +380,13 @@ async function provedKrok(tabId, beh, krok) {
       return ok;
     case 'nova':
       if (!entity[krok.entita]) return { ok: false, chyba: `nova: neznámý generátor „${krok.entita}“ (znám: ${Object.keys(entity).join(', ')})` };
-      ziskejEntitu(beh, rozsah, data, krok.entita, krok.instance || '', { nova: true, volby: { pohlavi: krok.pohlavi } });
+      try {
+        const volby = { pohlavi: krok.pohlavi };
+        for (const [k, v] of Object.entries(krok.volby || {})) volby[k] = D(v);
+        ziskejEntitu(beh, rozsah, data, krok.entita, krok.instance || '', { nova: true, volby });
+      } catch (e) {
+        return { ok: false, chyba: 'nova: ' + e.message };
+      }
       return ok;
     case 'pauza':
       beh.nast.pauza = krok.cislo;
@@ -409,13 +430,19 @@ async function provedKrok(tabId, beh, krok) {
       return ok;
     }
     default: {
-      const k = { prikaz: krok.prikaz, sel: D(krok.sel), hodnota: D(krok.hodnota), timeout: beh.nast.timeout };
+      const akce = !!PRIKAZY[krok.prikaz].akce;
+      const zakazane = String(beh.nast.zakazane || '').split('|').map((s) => s.trim()).filter(Boolean);
+      const k = { prikaz: krok.prikaz, sel: D(krok.sel), hodnota: D(krok.hodnota), timeout: beh.nast.timeout, akce, zakazane };
       const r = await domKrok(tabId, k);
       if (!r.ok) return r;
       if (krok.prikaz === 'vypln' || krok.prikaz === 'pis') {
         for (const klic of sledovaneKlice(krok.hodnota)) beh.hodnoty[klic] = k.hodnota;
       }
-      if (PRIKAZY[krok.prikaz].akce) await cekejNaKlid(tabId);
+      if (akce) {
+        await cekejNaKlid(tabId);
+        const kl = await cekejNaAjax(tabId, beh);
+        if (!kl.ok) return kl;
+      }
       return r;
     }
   }
