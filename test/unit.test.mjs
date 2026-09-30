@@ -5,8 +5,8 @@ import { readFileSync } from 'node:fs';
 import { rozparsujScenar, rozparsujRadek, rozdelNaRovnitku } from '../lib/dsl.js';
 import { rozbal, najdiSoubor, prectiNastaveni } from '../lib/soubory.js';
 import { Data, dosad, vyhodnot, sledovaneKlice, zkontrolujVyraz, najdiVyrazy } from '../lib/promenne.js';
-import { RUIAN } from '../generatory/ruian-data.js';
-import { SOUDY } from '../generatory/adresa.js';
+import { RUIAN, RUIAN_OVERENE } from '../generatory/ruian-data.js';
+import { SOUDY, adresyKVyberu } from '../generatory/adresa.js';
 import { entity } from '../generatory/registr.js';
 import { jePlatneRc } from '../generatory/osoba.js';
 import { jePlatneIco } from '../generatory/firma.js';
@@ -132,6 +132,37 @@ test('adresa je skutečné adresní místo z RÚIAN', () => {
   assert.ok(radek);
   assert.equal(radek.split('|')[5], V('adresa.mesto'));
   assert.ok(V('adresa.cela').includes(V('adresa.psc_mezera')));
+});
+
+test('RÚIAN: přednost mají adresy, které ISVR zná; vyřazené kódy a jejich obce se nepoužijí', () => {
+  const kod = (r) => r.split('|')[0];
+  const overene = new Set(RUIAN_OVERENE.map(kod));
+  // KSOS: Olomouc je ověřená, Ostrava ne – 74215078 (Ostrava) spadla v ISVR na interní chybu
+  const ksos = adresyKVyberu(new Data(isvr).ctx, 'KSOS');
+  assert.equal(ksos.overene, true);
+  assert.ok(ksos.adresy.length && ksos.adresy.every((r) => overene.has(kod(r))));
+  assert.ok(!ksos.adresy.some((r) => r.startsWith('74215078|')));
+  for (let i = 0; i < 50; i++) {
+    const a = entity.adresa.vytvor(new Data(isvr).ctx, { soud: 'KSOS' });
+    assert.equal(a.mesto, 'Olomouc');
+    assert.equal(a._overena, true);
+  }
+  // pro KSBR žádná ověřená není → neověřené, bez vyřazených kódů i obcí, kde už nějaký kód selhal
+  const brno = RUIAN.find((r) => r.includes('|Brno|'));
+  const data = new Data({ ...isvr, 'data/ruian-vyrazene.txt': `# komentář\n${kod(brno)}|Brno|30.09.2026 10:00|interní chyba\n` });
+  const ksbr = adresyKVyberu(data.ctx, 'KSBR');
+  assert.equal(ksbr.overene, false);
+  assert.ok(ksbr.adresy.length && !ksbr.adresy.some((r) => r.includes('|Brno|')));
+  assert.equal(entity.adresa.vytvor(data.ctx, { soud: 'KSBR' })._overena, false);
+  // kód, který ISVR dohledalo, se pak bere přednostně
+  const jihlava = RUIAN.find((r) => r.includes('|Jihlava|'));
+  const data2 = new Data({ ...isvr, 'data/ruian-overene.txt': `${kod(jihlava)}|Jihlava|30.09.2026 10:05\n` });
+  const x = adresyKVyberu(data2.ctx, 'KSBR');
+  assert.deepEqual([x.overene, x.adresy], [true, [jihlava]]);
+  // vlastní data/ruian.txt se bere jako ověřený výběr
+  const data3 = new Data({ ...isvr, 'data/ruian.txt': '12345678|Hlavní|1||Obec|Obec|11000|MSPH\n' });
+  assert.equal(entity.adresa.vytvor(data3.ctx, {}).ruian, '12345678');
+  assert.equal(entity.adresa.vytvor(data3.ctx, {})._overena, true);
 });
 
 test('pouzij hledá v useky/, zalozeni/ a hlásí cyklus', () => {

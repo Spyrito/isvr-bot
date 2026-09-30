@@ -2,7 +2,7 @@
 // dosazuje proměnné, posílá kroky přehrávači v horním rámci, zapisuje výstup, spravuje menu a nahrávání.
 import { PRIKAZY } from './lib/dsl.js';
 import { rozbal, nazevBehu, nazevScenare, seznamScenaru, prectiNastaveni, jeUsek, NASTAVENI } from './lib/soubory.js';
-import { Data, dosad, vyhodnot, ziskejEntitu, sledovaneKlice } from './lib/promenne.js';
+import { Data, dosad, vyhodnot, ziskejEntitu, sledovaneKlice, najdiVyrazy, rozeberVyraz } from './lib/promenne.js';
 import { entity } from './generatory/index.js';
 import { casProCsv } from './lib/csv.js';
 import * as U from './lib/uloziste.js';
@@ -213,13 +213,81 @@ async function vytvorBeh(tabId, soubor, vse, volby) {
     dialogyText: [],
     zacatek: Date.now(),
   };
-  dataBehu.set(beh.id, new Data(vse));
+  dataBehu.set(beh.id, new Data(await sRuianZalohou(vse)));
   return { beh };
 }
 
 async function dataPro(beh) {
-  if (!dataBehu.has(beh.id)) dataBehu.set(beh.id, new Data((await U.nactiVse()).soubory));
+  if (!dataBehu.has(beh.id)) dataBehu.set(beh.id, new Data(await sRuianZalohou((await U.nactiVse()).soubory)));
   return dataBehu.get(beh.id);
+}
+
+// ---------- kódy RÚIAN, které ISVR zná / nezná ----------
+// Neověřenou adresu Klikač po vyplnění {adresa.ruian} hlídá: když ISVR spadne nebo adresu nedohledá, zapíše kód
+// do data/ruian-vyrazene.txt (příště se nepoužije), když ji dohledá, do data/ruian-overene.txt (bere se přednostně).
+// Bez přístupu ke složce se řádky drží v úložišti rozšíření a přidávají se k datům při každém běhu.
+
+const RUIAN_SOUBORY = {
+  'ruian-vyrazene': '# Kódy RÚIAN, na které ISVR spadlo nebo je nedohledalo. Klikač je nepoužívá.\r\n# Když chceš kód zkusit znovu, řádek smaž. Formát: kód|adresa|kdy|chyba\r\n',
+  'ruian-overene': '# Kódy RÚIAN, které ISVR dohledalo. Klikač je bere přednostně. Formát: kód|adresa|kdy\r\n',
+};
+
+async function sRuianZalohou(vse) {
+  const klice = Object.keys(RUIAN_SOUBORY).map((n) => 'zaloha:' + n);
+  const z = await chrome.storage.local.get(klice);
+  let out = vse;
+  for (const n of Object.keys(RUIAN_SOUBORY)) {
+    const radky = z['zaloha:' + n];
+    if (radky && radky.length) out = { ...out, [`data/${n}.txt`]: (out[`data/${n}.txt`] || '') + '\n' + radky.join('\n') };
+  }
+  return out;
+}
+
+async function zapisRuian(nazev, kod, popis, poznamka = '') {
+  const cesta = `data/${nazev}.txt`;
+  const radek = [kod, popis, casProCsv(), poznamka.replace(/[|\r\n]+/g, ' ').slice(0, 200)].filter((x, i) => i < 3 || x).join('|');
+  const obsahuje = (t) => String(t || '').split(/\r?\n/).some((r) => r.split('|')[0].trim() === kod);
+  try {
+    const t = await U.cti(cesta);
+    if (obsahuje(t)) return;
+    await U.zapis(cesta, (t == null ? RUIAN_SOUBORY[nazev] : t.replace(/\s*$/, '\r\n')) + radek + '\r\n');
+  } catch (e) {
+    console.warn('Klikač: zápis', cesta, e.message);
+    const k = 'zaloha:' + nazev;
+    const { [k]: radky = [] } = await chrome.storage.local.get(k);
+    if (!obsahuje(radky.join('\n'))) await chrome.storage.local.set({ [k]: [...radky, radek] });
+  }
+}
+
+// Vyplnil krok kód RÚIAN neověřené adresy? Vrátí, co se má hlídat.
+function hlidanyRuian(beh, krok, rozsah, hodnota) {
+  for (const { vyraz } of najdiVyrazy(krok.hodnota || '')) {
+    const r = rozeberVyraz(vyraz);
+    if (!r || r.druh !== 'entita' || r.entita !== 'adresa' || r.vlastnost !== 'ruian') continue;
+    const d = (rozsah.entita || {})[`adresa:${r.instance || ''}`];
+    if (!d || d._overena) return null;
+    return { kod: String(hodnota).trim(), popis: d.cela, pc: beh.pc, zbyva: 3 };
+  }
+  return null;
+}
+
+// Po kroku: rozhodne o hlídaném kódu. Vrací doplněk chybové zprávy.
+async function vyhodnotRuian(beh, krok, v) {
+  const h = beh.ruian;
+  if (!h) return '';
+  if (!v.ok) {
+    beh.ruian = null;
+    // jen chyba aplikace nebo nedočkané potvrzení; chybějící tlačítko není vina adresy
+    if (!/^aplikace hlásí chybu/.test(v.chyba || '') && krok.prikaz !== 'cekej-na') return '';
+    await zapisRuian('ruian-vyrazene', h.kod, h.popis, v.chyba);
+    return ` – ISVR nezná adresu RÚIAN ${h.kod} (${h.popis}); kód je vyřazený v data/ruian-vyrazene.txt a příště se nepoužije. Spusť scénář znovu.`;
+  }
+  if (h.pc === beh.pc) return ''; // krok, který kód vyplnil
+  if (krok.prikaz === 'cekej-na' || --h.zbyva <= 0) {
+    beh.ruian = null;
+    await zapisRuian('ruian-overene', h.kod, h.popis);
+  }
+  return '';
 }
 
 function popisChyb(chyby) {
@@ -316,9 +384,10 @@ async function smycka(tabId) {
         await uloz(tabId);
         continue;
       }
+      const oRuian = await vyhodnotRuian(beh, krok, v);
       if (!v.ok) {
         beh.stav = 'chyba';
-        beh.chyba = { zprava: v.chyba, soubor: krok.soubor, radek: krok.radek, text: krok.text };
+        beh.chyba = { zprava: v.chyba + oRuian, soubor: krok.soubor, radek: krok.radek, text: krok.text };
         await uloz(tabId);
         rozesliStav(tabId);
         if (krok.sel) zvyrazni(tabId, beh, krok, 'chyba');
@@ -437,6 +506,7 @@ async function provedKrok(tabId, beh, krok) {
       if (!r.ok) return r;
       if (krok.prikaz === 'vypln' || krok.prikaz === 'pis') {
         for (const klic of sledovaneKlice(krok.hodnota)) beh.hodnoty[klic] = k.hodnota;
+        beh.ruian = hlidanyRuian(beh, krok, rozsah, k.hodnota) || beh.ruian;
       }
       if (akce) {
         await cekejNaKlid(tabId);

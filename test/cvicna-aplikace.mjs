@@ -1,9 +1,15 @@
 // Cvičná „stará notářská aplikace“ pro vyzkoušení Klikače a pro testy:
 // frameset s rámcem main, ASP.NET postbacky (__doPostBack, AutoPostBack), confirm() před uložením,
 // alert() hned po postbacku, popisky v buňkách tabulky, pole s maskou a zpožděné odpovědi.
+// /Adresa.aspx napodobuje dohledání adresy podle RÚIAN v ISVR: ověřené kódy a České Budějovice najde,
+// ostatní kódy z vestavěné databáze skončí „Nastala interní chyba“ (jako 74215078), cizí kód nenajde.
 //
 //   node test/cvicna-aplikace.mjs [port]      → http://localhost:5178/Subjekty/Novy.aspx
 import http from 'node:http';
+import { RUIAN, RUIAN_OVERENE } from '../generatory/ruian-data.js';
+
+const ZNAME_RUIAN = new Set([...RUIAN_OVERENE, ...RUIAN.filter((r) => r.split('|')[5] === 'České Budějovice')].map((r) => r.split('|')[0]));
+const PADAJICI_RUIAN = new Set(RUIAN.map((r) => r.split('|')[0]).filter((k) => !ZNAME_RUIAN.has(k)));
 
 const ulozene = [];
 let dalsiId = 1200;
@@ -160,6 +166,17 @@ export function spustAplikaci(port = 5178) {
         if (f.__EVENTTARGET === 'lnkPridatSpolecnika' || f.__EVENTTARGET === 'lnkPridatJednatele') await new Promise((r2) => setTimeout(r2, 400));
       }
       return posli(formular(st));
+    }
+    if (url.pathname === '/Adresa.aspx') {
+      const kod = (url.searchParams.get('ruian') || '').trim();
+      if (kod && PADAJICI_RUIAN.has(kod)) return posli(stranka('Chyba', '<h1>Nastala interní chyba</h1><p>java.lang.NullPointerException</p>'), 500);
+      const radek = RUIAN.find((r) => r.startsWith(kod + '|'));
+      let vysledek = '';
+      if (kod && ZNAME_RUIAN.has(kod)) {
+        vysledek = `<p class="zprava">Adresa byla dohledána podle RUIAN</p><p id="nalezena">${esc(radek)}</p><button type="button" onclick="this.textContent='Vybráno'">Vybrat</button>`;
+      } else if (kod) vysledek = '<p class="chyba">Adresa nenalezena</p>';
+      return posli(stranka('Adresa', `<h2>Zadání adresy</h2><form method="get" action="/Adresa.aspx"><table><tr><td><label for="ruian">RUIAN</label></td>
+<td><input id="ruian" name="ruian" value="${esc(kod)}"></td></tr></table><input type="submit" value="Dohledat adresu"></form>${vysledek}`));
     }
     if (url.pathname === '/api/ulozene') return posli(JSON.stringify(ulozene), 200, 'application/json');
     if (url.pathname === '/api/reset') {

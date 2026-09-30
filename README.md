@@ -144,6 +144,12 @@ klikne na Uložit v okně, ne na Uložit pod ním. Po každé akci se čeká na 
   všech 7 rejstříkových soudů. `{adresa.ruian}` se zadá do pole RUIAN a ISVR adresu dohledá. `nova adresa soud=KSBR`
   vybere adresu v obvodu soudu. Vlastní seznam: `data/ruian.txt`, řádek `kód|ulice|č.p.|č.o.|část obce|obec|PSČ|soud`;
   kód adresy najdeš na https://vdp.cuzk.gov.cz/vdp/ruian/overeniadresy (v adrese stránky jako `kodAdAc`).
+- **Jen adresy, které ISVR zná**: testovací ISVR nemá celý RÚIAN a na některé skutečné kódy spadne s interní chybou
+  (např. 74215078, Ostrava). Klikač proto bere přednostně ověřené adresy (vestavěné Praha a Olomouc, celý
+  `data/ruian.txt` a `data/ruian-overene.txt`). Neověřenou použije, jen když pro soud žádná ověřená není (KSBR, KSCB,
+  KSPL, KSUL, KSHK), a hlídá ji: když ISVR spadne nebo adresu nedohledá, zapíše kód do `data/ruian-vyrazene.txt`
+  a jeho obec už nevybírá; když ji dohledá, zapíše ji do `data/ruian-overene.txt` a příště ji použije zase.
+  Oba soubory jsou ve složce, takže se o ně dělíš s kolegy; řádek z vyřazených smaž, když chceš kód zkusit znovu.
 - `{posledni.spz}` vloží hodnotu z posledního úspěšného běhu.
 - **Bez programování**: `data/vlastni.txt` – `seznam titul = Ing.|Mgr.|Bc.|` a `vzor spisova_znacka = NZ {cislo:100-999}/{rok}`.
   Seznamy slov jde přepsat soubory `data/firmy-zaklad.txt`, `firmy-obor.txt`, `spolky.txt`, `jmena-muzi.txt`,

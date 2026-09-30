@@ -81,7 +81,7 @@ const cvicne = Object.fromEntries(JSON.parse(readFileSync(resolve(CVICNA, 'sezna
 await ext.evaluate(
   async ({ app, cvicne }) => {
     const soubory = { ...cvicne };
-    soubory['nastaveni.txt'] = soubory['nastaveni.txt'].replace(/^adresa.*$/m, `adresa  = ${app}`).replace(/^pauza.*$/m, 'pauza   = 30');
+    soubory['nastaveni.txt'] = soubory['nastaveni.txt'].replace(/^adresa.*$/m, `adresa  = ${app}`).replace(/^pauza.*$/m, 'pauza   = 30') + 'chyba   = text:"Nastala interní chyba"\n';
     await chrome.storage.local.set({ soubory });
   },
   { app: APP, cvicne },
@@ -402,6 +402,45 @@ await test('popup a historie se načtou', async () => {
   await pp.close();
   await ext.reload();
   await ext.locator('#radky tr').first().waitFor();
+});
+
+await test('RÚIAN: kód, na který ISVR spadne, se vyřadí; dohledaný se příště bere přednostně', async () => {
+  const scenar = (soud) => `otevri    /Adresa.aspx\nnova      adresa soud=${soud}\nvypln     label:"RUIAN" = {adresa.ruian}\nklikni    text:"Dohledat adresu"\ncekej-na  text:"Adresa byla dohledána podle RUIAN"\nklikni    text:"Vybrat"\n`;
+  await ext.evaluate(async (s) => {
+    const { soubory } = await chrome.storage.local.get('soubory');
+    soubory['useky/Adresa KSCB.txt'] = s.KSCB;
+    soubory['useky/Adresa KSHK.txt'] = s.KSHK;
+    await chrome.storage.local.set({ soubory });
+  }, { KSCB: scenar('KSCB'), KSHK: scenar('KSHK') });
+  const soubor = async (c) => ((await uloziste('soubory')) || {})[c] || '';
+  const hodnota = (h, pripona) => Object.entries(h).find(([k]) => k.endsWith(pripona))?.[1];
+
+  // KSHK: v ISVR (cvičné) nejde žádná adresa → interní chyba, kód se vyřadí i s obcí
+  const obce = [];
+  for (let i = 0; i < 2; i++) {
+    const pred = (await historie()).length;
+    await zprava({ typ: 'spust', tabId, soubor: 'useky/Adresa KSHK.txt' });
+    const p = await cekej(async () => {
+      const x = await pohled();
+      return x.beh?.stav === 'chyba' && x;
+    }, 'interní chyba ISVR');
+    assert.match(p.beh.chyba.zprava, /^aplikace hlásí chybu: Nastala interní chyba – ISVR nezná adresu RÚIAN \d+/);
+    const kod = hodnota(p.beh.hodnoty, '_ruian');
+    assert.match(await soubor('data/ruian-vyrazene.txt'), new RegExp(`^${kod}\\|`, 'm'));
+    obce.push(p.beh.chyba.zprava.match(/\d{3} \d{2} ([^)]+)\)/)[1]);
+    await zprava({ typ: 'ovladani', tabId, akce: 'stop' });
+    await cekej(async () => (await historie()).length > pred, 'zápis chyby');
+  }
+  assert.notEqual(obce[0], obce[1], 'po chybě se obec, kterou ISVR nezná, už nevybírá');
+
+  // KSCB: neověřená adresa, kterou ISVR dohledá → zapíše se jako ověřená a příště se použije zas
+  const [h1] = await spustADokonci('useky/Adresa KSCB.txt');
+  assert.equal(h1.vysledek, 'OK', JSON.stringify(h1));
+  const kod = hodnota(h1.hodnoty, '_ruian');
+  assert.ok(kod);
+  assert.match(await soubor('data/ruian-overene.txt'), new RegExp(`^${kod}\\|`, 'm'));
+  const [h2] = await spustADokonci('useky/Adresa KSCB.txt');
+  assert.equal(hodnota(h2.hodnoty, '_ruian'), kod);
 });
 
 await test('pracovní složka: čtení scénáře změněného mimo rozšíření, zápis CSV do vystupy/', async () => {

@@ -2,8 +2,13 @@
 // Formát: kód adresního místa|ulice|č.p.|č.o.|část obce|obec|PSČ|rejstříkový soud (podle kraje).
 // Přepíše ho soubor data/ruian.txt ve složce Klikac (stejný formát, soud může chybět).
 // Kódy dalších adres: https://vdp.cuzk.gov.cz/vdp/ruian/overeniadresy (kód je v adrese stránky jako kodAdAc).
-export const RUIAN = [
-  // ověřené v ISVR (dohledání podle RUIAN vrátí právě tuto adresu)
+//
+// Jen RUIAN_OVERENE ISVR opravdu zná. Ostatní kódy jsou z veřejného RÚIAN a testovací ISVR na některé z nich
+// spadne s interní chybou (např. 74215078, Ostrava) – proto se používají, jen když pro soud není ověřená adresa,
+// a Klikač si je třídí sám (data/ruian-overene.txt, data/ruian-vyrazene.txt).
+
+// ověřené v ISVR (dohledání podle RUIAN vrátí právě tuto adresu)
+export const RUIAN_OVERENE = [
   "21704970|Vodičkova|704|36|Nové Město|Praha|11000|MSPH",
   "21775851|Táboritská|880|14|Žižkov|Praha|13000|MSPH",
   "23238828|Na příhonu|53|3|Droždín|Olomouc|77900|KSOS",
@@ -41,6 +46,10 @@ export const RUIAN = [
   "82456097|U solných mlýnů|1044|32c|Holice|Olomouc|77900|KSOS",
   "82698741|Kyselovská|667|90|Slavonín|Olomouc|78301|KSOS",
   "88379931|Jaromírova|369|39|Řepčín|Olomouc|77900|KSOS",
+];
+
+// neověřené: z veřejného RÚIAN, ISVR je nemusí znát
+export const RUIAN_NEOVERENE = [
   "1381326|Ininova|128||Dubí|Kladno|27203|MSPH",
   "1382241|Janáčkova|228||Dubí|Kladno|27203|MSPH",
   "1383281|Jar. Charváta|407||Dubí|Kladno|27203|MSPH",
@@ -587,3 +596,5 @@ export const RUIAN = [
   "85373630|Červené domky|378|2|Staré Hory|Jihlava|58601|KSBR",
   "87379597|Na Nivách|5953|16|Jihlava|Jihlava|58601|KSBR",
 ];
+
+export const RUIAN = [...RUIAN_OVERENE, ...RUIAN_NEOVERENE];
