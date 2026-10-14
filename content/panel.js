@@ -318,7 +318,7 @@
     }
     const b = p.beh;
     if (b) {
-      const nadpis = `<div><b>${esc(b.nazev)}</b>${b.pocet > 1 ? ` <span class="m">(${b.iterace}/${b.pocet})</span>` : ''}${b.rodic ? ` <span class="m">v pauze „${esc(b.rodic)}“</span>` : ''}</div>`;
+      const nadpis = `<div><b>${esc(b.nazev)}</b>${b.pocet > 1 ? ` <span class="m">(${b.iterace}/${b.pocet})</span>` : ''}${b.rodic ? ` <span class="m">v pauze „${esc(b.rodic)}“</span>` : ''}${b.server ? `<div class="m">server ${esc(b.server)}</div>` : ''}</div>`;
       if (b.stav === 'bezi') {
         return `${nadpis}<div class="bar"><i style="width:${Math.round((100 * b.pc) / Math.max(1, b.celkem))}%"></i></div>
           <div class="m" style="margin-top:4px">krok ${Math.min(b.pc + 1, b.celkem)} z ${b.celkem}</div>${radekKroku(b.krok)}

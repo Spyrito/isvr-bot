@@ -458,17 +458,15 @@ await test('víc serverů aplikace: běh zůstane na serveru záložky, adresa z
   await main().locator('#ddlTyp').waitFor();
   await spi(500);
   assert.equal(await main().locator('[data-klikac=panel]').count(), 0, 'server není v nastavení → bez panelu');
-  // totéž, co dělá tlačítko „Přidat tento server“ v popupu
-  await ext.evaluate(async (druhy) => {
-    const U = await import('/lib/uloziste.js');
-    const { pridejAdresu, NASTAVENI } = await import('/lib/soubory.js');
-    const { soubory } = await U.nactiVse();
-    await U.zapis(NASTAVENI, pridejAdresu(soubory[NASTAVENI], druhy));
-    await chrome.runtime.sendMessage({ typ: 'synchronizuj' });
-  }, DRUHY);
-  // panel se na druhém serveru ukáže hned, bez obnovení stránky
+  // záložka na serveru, který v nastavení chybí (dev3), scénář otevírá první server (dev2):
+  // běh musí zůstat na dev3 a dev3 se připíše do nastavení
+  let [h] = await spustADokonci('useky/Absolutne.txt');
+  assert.equal(h.vysledek, 'OK', JSON.stringify(h));
+  assert.equal(app.url(), `${DRUHY}/Subjekty/Novy.aspx`);
+  assert.match((await uloziste('soubory'))['nastaveni.txt'], new RegExp(`^adresa\\s*=.*\\| ${DRUHY.replace(/[.:/]/g, '\\$&')}\\s*$`, 'm'));
+  // a panel se tu od teď ukazuje
   await main().locator('[data-klikac=panel]').waitFor({ state: 'attached', timeout: 5000 });
-  let [h] = await spustADokonci('useky/Relativne.txt');
+  [h] = await spustADokonci('useky/Relativne.txt');
   assert.equal(h.vysledek, 'OK', JSON.stringify(h));
   assert.equal(app.url(), `${DRUHY}/Menu.aspx`);
   [h] = await spustADokonci('useky/Absolutne.txt');

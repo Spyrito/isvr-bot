@@ -1,7 +1,7 @@
 // Background: drží stav běhů (přežije postback i znovunačtení stránky), rozbaluje „pouzij“,
 // dosazuje proměnné, posílá kroky přehrávači v horním rámci, zapisuje výstup, spravuje menu a nahrávání.
 import { PRIKAZY } from './lib/dsl.js';
-import { rozbal, nazevBehu, nazevScenare, seznamScenaru, prectiNastaveni, jeUsek, NASTAVENI, adresaStranky, naServer } from './lib/soubory.js';
+import { rozbal, nazevBehu, nazevScenare, seznamScenaru, prectiNastaveni, jeUsek, NASTAVENI, adresaStranky, naServer, stejnaAplikace, pridejAdresu } from './lib/soubory.js';
 import { Data, dosad, vyhodnot, ziskejEntitu, sledovaneKlice, najdiVyrazy, rozeberVyraz } from './lib/promenne.js';
 import { entity } from './generatory/index.js';
 import { casProCsv } from './lib/csv.js';
@@ -206,8 +206,8 @@ async function vytvorBeh(tabId, soubor, vse, volby) {
       pauza: nast.pauza,
       timeout: nast.timeout,
       dialogy: nast.dialogy,
-      adresa: (volby.server && nast.adresy.includes(volby.server) && volby.server) || nast.adresa,
-      adresy: nast.adresy,
+      adresa: volby.server || nast.adresa,
+      adresy: volby.server && !nast.adresy.includes(volby.server) ? [...nast.adresy, volby.server] : nast.adresy,
       chyba: nast.chyba || '',
       zakazane: nast.zakazane || '',
     },
@@ -302,8 +302,13 @@ function popisChyb(chyby) {
   return chyby.slice(0, 5).map((c) => `${c.soubor}:${c.radek} – ${c.zprava}`).join('\n') + (chyby.length > 5 ? `\n… a dalších ${chyby.length - 5}` : '');
 }
 
-// Na kterém serveru aplikace se pracuje: podle záložky, jinak posledně použitý, jinak první z nastavení.
-async function zjistiServer(tabId, adresy) {
+// Na kterém serveru aplikace se pracuje:
+//  1. server záložky, když je v „adresa =“,
+//  2. server záložky, když stránka patří stejné aplikaci jako první „otevri“ scénáře (stejná cesta /nev/…),
+//     i když v nastavení chybí – bot nesmí uživatele z dev3 přehodit na dev2; server se do nastavení rovnou připíše,
+//  3. posledně použitý, 4. první z nastavení.
+async function zjistiServer(tabId, nast, soubor, vse) {
+  const adresy = nast.adresy;
   let url = '';
   try {
     url = (await chrome.tabs.get(tabId)).url;
@@ -314,6 +319,23 @@ async function zjistiServer(tabId, adresy) {
   if (podleZalozky) {
     await chrome.storage.local.set({ posledniServer: podleZalozky });
     return podleZalozky;
+  }
+  const otevri = rozbal(soubor, vse).kroky.find((k) => k.prikaz === 'otevri' && !String(k.hodnota).includes('{'));
+  let cil = null;
+  try {
+    cil = otevri ? new URL(otevri.hodnota, nast.adresa || undefined).href : null;
+  } catch {
+    /* neplatná adresa nahlásí až krok */
+  }
+  if (cil && stejnaAplikace(url, cil)) {
+    const server = new URL(url).origin;
+    await chrome.storage.local.set({ posledniServer: server });
+    try {
+      await U.zapis(NASTAVENI, pridejAdresu(vse[NASTAVENI] || '', server));
+    } catch (e) {
+      console.warn('Klikač: server se nepodařilo zapsat do nastavení', e.message);
+    }
+    return server;
   }
   const { posledniServer } = await chrome.storage.local.get('posledniServer');
   return adresy.includes(posledniServer) ? posledniServer : adresy[0] || '';
@@ -330,7 +352,7 @@ async function spust(tabId, { soubor, pocet = 1, krokovat = false, odRadku = nul
     else return { ok: false, chyba: `Na záložce běží „${nahore.nazev}“. Nejdřív ho zastav.` };
   }
   const { soubory: vse } = await U.nactiVse();
-  const server = await zjistiServer(tabId, prectiNastaveni(vse[NASTAVENI]).adresy);
+  const server = await zjistiServer(tabId, prectiNastaveni(vse[NASTAVENI]), soubor, vse);
   const { beh, chyby } = await vytvorBeh(tabId, soubor, vse, { pocet, krokovat, odRadku, server });
   if (chyby) {
     const zprava = popisChyb(chyby);
@@ -718,6 +740,13 @@ async function pohled(tabId) {
       dokud: beh.stav === 'rucne' ? beh.dokud : null,
       hodnoty: beh.hodnoty,
       posledniUsek: beh.posledniUsek || null,
+      server: (() => {
+        try {
+          return beh.nast.adresa ? new URL(beh.nast.adresa).host : '';
+        } catch {
+          return '';
+        }
+      })(),
     },
     vysledek: st.vysledek,
     nahravani: st.nahravani && {

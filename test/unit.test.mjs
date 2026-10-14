@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { rozparsujScenar, rozparsujRadek, rozdelNaRovnitku } from '../lib/dsl.js';
-import { rozbal, najdiSoubor, prectiNastaveni, seznamAdres, adresaStranky, naServer, pridejAdresu } from '../lib/soubory.js';
+import { rozbal, najdiSoubor, prectiNastaveni, seznamAdres, adresaStranky, naServer, pridejAdresu, stejnaAplikace } from '../lib/soubory.js';
 import { Data, dosad, vyhodnot, sledovaneKlice, zkontrolujVyraz, najdiVyrazy } from '../lib/promenne.js';
 import { RUIAN, RUIAN_OVERENE } from '../generatory/ruian-data.js';
 import { SOUDY, adresyKVyberu } from '../generatory/adresa.js';
@@ -257,4 +257,8 @@ test('víc serverů aplikace: adresa = A | B', () => {
   assert.equal(pridejAdresu(nove, 'http://192.168.215.225:8080'), nove);
   assert.deepEqual(prectiNastaveni(nove).adresy, ['http://192.168.215.125:8080', 'http://192.168.215.225:8080']);
   assert.equal(pridejAdresu('pauza = 1\n', 'http://x:1'), 'pauza = 1\nadresa  = http://x:1\n');
+  // dev3, který v nastavení chybí, se pozná podle cesty aplikace
+  assert.equal(stejnaAplikace('http://192.168.215.225:8080/nev/desk.html?4', 'http://192.168.215.125:8080/nev/prihlaseni.html'), true);
+  assert.equal(stejnaAplikace('https://www.google.com/search?q=x', 'http://192.168.215.125:8080/nev/prihlaseni.html'), false);
+  assert.equal(stejnaAplikace('http://192.168.215.225:8080/', 'http://192.168.215.125:8080/nev/prihlaseni.html'), false);
 });

@@ -61,7 +61,8 @@ v `data/vlastni.txt`; scénář je přepíše příkazem `nastav vklad = 50000`.
    Klikač naplní scénáři z rozšíření nebo ukázkami.
 6. V `nastaveni.txt` zkontroluj `adresa = http://192.168.215.125:8080 | http://192.168.215.225:8080` (servery ISVR,
    další přidáš za `|`). Na stránkách těchto serverů se ukazuje plovoucí panel. Scénář běží na serveru, na kterém je
-   záložka (mimo aplikaci na posledně použitém); `otevri` s adresou jiného serveru z tohoto seznamu se převede na něj,
+   záložka (mimo aplikaci na posledně použitém); když je záložka na serveru téže aplikace (stejná cesta `/nev/…`),
+   který v seznamu chybí, zůstane na něm a sám si ho do `adresa =` připíše; `otevri` s adresou jiného serveru z tohoto seznamu se převede na něj,
    takže stejné scénáře fungují na všech serverech. Nahrávač zapisuje `otevri` relativně (`/nev/…`).
 
 Po restartu prohlížeče Chrome jednou požádá o potvrzení přístupu ke složce – v popupu nebo editoru je
