@@ -67,12 +67,15 @@
   function maZobrazit(p) {
     if (!p) return false;
     if (p.beh || p.nahravani || p.vysledek || p.panel) return true;
-    if (!p.adresa) return false;
-    try {
-      return adresaStranky().startsWith(p.adresa) || new URL(adresaStranky()).origin === new URL(p.adresa).origin;
-    } catch {
-      return false;
-    }
+    const adresy = p.adresy && p.adresy.length ? p.adresy : p.adresa ? [p.adresa] : [];
+    const url = adresaStranky();
+    return adresy.some((a) => {
+      try {
+        return url.startsWith(a) || new URL(url).origin === new URL(a).origin;
+      } catch {
+        return false;
+      }
+    });
   }
 
   function posli(z) {

@@ -335,7 +335,7 @@ await test('nahrávání: kroky v rámci, sloučení změn pole, uložení a ná
   const text = (await uloziste('soubory'))['zalozeni/Nahrany.txt'];
   const radky = text.split(/\r?\n/).filter((x) => x && !x.startsWith('#'));
   assert.deepEqual(radky, [
-    `otevri    ${APP}/Subjekty/Novy.aspx`,
+    'otevri    /Subjekty/Novy.aspx', // relativně, aby šel na všech serverech z „adresa =“
     'vyber     @main #ddlTyp = Právnická osoba',
     'vypln     @main #txtNazev = Delta Stavby s.r.o.',
     'vypln     @main #txtICO = 27074358',
@@ -441,6 +441,34 @@ await test('RÚIAN: kód, na který ISVR spadne, se vyřadí; dohledaný se př�
   assert.match(await soubor('data/ruian-overene.txt'), new RegExp(`^${kod}\\|`, 'm'));
   const [h2] = await spustADokonci('useky/Adresa KSCB.txt');
   assert.equal(hodnota(h2.hodnoty, '_ruian'), kod);
+});
+
+await test('víc serverů aplikace: běh zůstane na serveru záložky, adresa z jiného serveru se převede', async () => {
+  // 127.0.0.1 a localhost jsou pro prohlížeč dva servery téže aplikace (jako …125 a …225)
+  const DRUHY = APP.replace('127.0.0.1', 'localhost');
+  await ext.evaluate(async ({ app, druhy }) => {
+    const { soubory } = await chrome.storage.local.get('soubory');
+    soubory['nastaveni.txt'] = soubory['nastaveni.txt'].replace(/^adresa.*$/m, `adresa  = ${app} | ${druhy}/`);
+    soubory['useky/Relativne.txt'] = 'otevri    /Menu.aspx\n';
+    soubory['useky/Absolutne.txt'] = `otevri    ${app}/Subjekty/Novy.aspx\ncekej-na  @main #ddlTyp\n`;
+    await chrome.storage.local.set({ soubory });
+  }, { app: APP, druhy: DRUHY });
+  await zprava({ typ: 'ovladani', tabId, akce: 'zavrit' });
+  await app.goto(`${DRUHY}/Subjekty/Novy.aspx`);
+  // panel se ukazuje i na druhém serveru
+  await main().locator('[data-klikac=panel]').waitFor({ state: 'attached' });
+  let [h] = await spustADokonci('useky/Relativne.txt');
+  assert.equal(h.vysledek, 'OK', JSON.stringify(h));
+  assert.equal(app.url(), `${DRUHY}/Menu.aspx`);
+  [h] = await spustADokonci('useky/Absolutne.txt');
+  assert.equal(h.vysledek, 'OK', JSON.stringify(h));
+  assert.equal(app.url(), `${DRUHY}/Subjekty/Novy.aspx`);
+  // z jiné stránky (mimo aplikaci) se otevře posledně použitý server
+  await app.goto('about:blank');
+  [h] = await spustADokonci('useky/Relativne.txt');
+  assert.equal(app.url(), `${DRUHY}/Menu.aspx`);
+  // zpátky na první server pro další testy
+  await app.goto(`${APP}/Subjekty/Novy.aspx`);
 });
 
 await test('pracovní složka: čtení scénáře změněného mimo rozšíření, zápis CSV do vystupy/', async () => {

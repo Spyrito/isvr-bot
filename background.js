@@ -1,7 +1,7 @@
 // Background: drží stav běhů (přežije postback i znovunačtení stránky), rozbaluje „pouzij“,
 // dosazuje proměnné, posílá kroky přehrávači v horním rámci, zapisuje výstup, spravuje menu a nahrávání.
 import { PRIKAZY } from './lib/dsl.js';
-import { rozbal, nazevBehu, nazevScenare, seznamScenaru, prectiNastaveni, jeUsek, NASTAVENI } from './lib/soubory.js';
+import { rozbal, nazevBehu, nazevScenare, seznamScenaru, prectiNastaveni, jeUsek, NASTAVENI, adresaStranky, naServer } from './lib/soubory.js';
 import { Data, dosad, vyhodnot, ziskejEntitu, sledovaneKlice, najdiVyrazy, rozeberVyraz } from './lib/promenne.js';
 import { entity } from './generatory/index.js';
 import { casProCsv } from './lib/csv.js';
@@ -202,7 +202,15 @@ async function vytvorBeh(tabId, soubor, vse, volby) {
     krokovatOdZacatku: !!volby.krokovat,
     pocet: volby.pocet || 1,
     iterace: volby.iterace || 1,
-    nast: { pauza: nast.pauza, timeout: nast.timeout, dialogy: nast.dialogy, adresa: nast.adresa, chyba: nast.chyba || '', zakazane: nast.zakazane || '' },
+    nast: {
+      pauza: nast.pauza,
+      timeout: nast.timeout,
+      dialogy: nast.dialogy,
+      adresa: (volby.server && nast.adresy.includes(volby.server) && volby.server) || nast.adresa,
+      adresy: nast.adresy,
+      chyba: nast.chyba || '',
+      zakazane: nast.zakazane || '',
+    },
     promenne: {},
     globalni: {},
     hodnoty: {},
@@ -294,6 +302,23 @@ function popisChyb(chyby) {
   return chyby.slice(0, 5).map((c) => `${c.soubor}:${c.radek} – ${c.zprava}`).join('\n') + (chyby.length > 5 ? `\n… a dalších ${chyby.length - 5}` : '');
 }
 
+// Na kterém serveru aplikace se pracuje: podle záložky, jinak posledně použitý, jinak první z nastavení.
+async function zjistiServer(tabId, adresy) {
+  let url = '';
+  try {
+    url = (await chrome.tabs.get(tabId)).url;
+  } catch {
+    /* záložka zmizela */
+  }
+  const podleZalozky = adresaStranky(url, adresy);
+  if (podleZalozky) {
+    await chrome.storage.local.set({ posledniServer: podleZalozky });
+    return podleZalozky;
+  }
+  const { posledniServer } = await chrome.storage.local.get('posledniServer');
+  return adresy.includes(posledniServer) ? posledniServer : adresy[0] || '';
+}
+
 // Spustí scénář na záložce. Během „rucne“ pauzy se úsek vloží nad pozastavený běh.
 async function spust(tabId, { soubor, pocet = 1, krokovat = false, odRadku = null }) {
   const st = await stav(tabId);
@@ -305,7 +330,8 @@ async function spust(tabId, { soubor, pocet = 1, krokovat = false, odRadku = nul
     else return { ok: false, chyba: `Na záložce běží „${nahore.nazev}“. Nejdřív ho zastav.` };
   }
   const { soubory: vse } = await U.nactiVse();
-  const { beh, chyby } = await vytvorBeh(tabId, soubor, vse, { pocet, krokovat, odRadku });
+  const server = await zjistiServer(tabId, prectiNastaveni(vse[NASTAVENI]).adresy);
+  const { beh, chyby } = await vytvorBeh(tabId, soubor, vse, { pocet, krokovat, odRadku, server });
   if (chyby) {
     const zprava = popisChyb(chyby);
     st.vysledek = { nazev: nazevBehu(soubor), vysledek: 'chyba ve scénáři', zprava, hodnoty: {}, cas: casProCsv() };
@@ -477,7 +503,7 @@ async function provedKrok(tabId, beh, krok) {
       const cil = D(krok.hodnota);
       let url;
       try {
-        url = new URL(cil, beh.nast.adresa || undefined).href;
+        url = naServer(new URL(cil, beh.nast.adresa || undefined).href, beh.nast.adresy || [], beh.nast.adresa);
       } catch {
         return { ok: false, chyba: `otevri: neplatná adresa „${cil}“` + (beh.nast.adresa ? '' : ' (relativní adresa potřebuje „adresa =“ v nastaveni.txt)') };
       }
@@ -560,7 +586,7 @@ async function dokonci(tabId, vysledek) {
     st.vysledek = { nazev: beh.nazev, vysledek, hodnoty: beh.hodnoty, cas, iterace: beh.iterace, pocet: beh.pocet };
     if (vysledek === 'OK' && beh.iterace < beh.pocet) {
       const { soubory: vse } = await U.nactiVse();
-      const r = await vytvorBeh(tabId, beh.soubor, vse, { pocet: beh.pocet, krokovat: beh.krokovatOdZacatku, iterace: beh.iterace + 1 });
+      const r = await vytvorBeh(tabId, beh.soubor, vse, { pocet: beh.pocet, krokovat: beh.krokovatOdZacatku, iterace: beh.iterace + 1, server: beh.nast.adresa });
       if (r.beh) st.zasobnik.push(r.beh);
       else st.vysledek = { ...st.vysledek, vysledek: 'chyba ve scénáři', zprava: popisChyb(r.chyby) };
     }
@@ -700,6 +726,7 @@ async function pohled(tabId) {
     },
     useky: await panelUseky(),
     adresa: nastaveni.adresa,
+    adresy: nastaveni.adresy,
     panel: !!st.panel,
     dialogy: beh && beh.stav === 'bezi' ? beh.nast.dialogy : null,
   };
@@ -758,7 +785,11 @@ async function nahravani(tabId, zprava) {
       const slozka = zprava.slozka === 'zalozeni' ? 'zalozeni' : 'useky';
       const nazev = String(zprava.nazev || '').trim().replace(/[\\:*?"<>|]/g, '').replace(/\.txt$/i, '') || 'Nahravka';
       const radky = [`# popis: ${zprava.popis || 'nahráno ' + casProCsv()}`, `# nahráno ${casProCsv()}`];
-      if (slozka === 'zalozeni') radky.push(`otevri    ${st.nahravani.startUrl}`);
+      if (slozka === 'zalozeni') {
+        // relativně, aby scénář fungoval na všech serverech z „adresa =“
+        const u = new URL(st.nahravani.startUrl);
+        radky.push(`otevri    ${adresaStranky(u.href, nastaveni.adresy) ? u.pathname + u.search + u.hash : u.href}`);
+      }
       for (const k of st.nahravani.kroky) radky.push(k.radek || radekNahravky(k));
       const { soubory: vse } = await U.nactiVse();
       let cesta = `${slozka}/${nazev}.txt`;

@@ -1,7 +1,7 @@
 # Nastavení Klikače
-# adresa = začátek adresy aplikace; relativní „otevri /nev/prihlaseni.html“ se doplní z ní
-#          a na stránkách s touto adresou se ukazuje plovoucí panel
-adresa  = http://192.168.215.125:8080
+# adresa = adresa aplikace; víc serverů odděl |. Relativní „otevri /nev/prihlaseni.html“ se doplní
+#          ze serveru, na kterém zrovna jsi (jinak z posledně použitého), a na těchto stránkách se ukazuje panel
+adresa  = http://192.168.215.125:8080 | http://192.168.215.225:8080
 # pauza mezi kroky v ms
 pauza   = 200
 # jak dlouho nejvýš čekat na prvek (ms)

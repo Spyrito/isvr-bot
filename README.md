@@ -59,8 +59,10 @@ v `data/vlastni.txt`; scénář je přepíše příkazem `nastav vklad = 50000`.
 4. Připnout ikonu Klikače na lištu. Po instalaci jsou v rozšíření ukázkové scénáře.
 5. Editor → **Složka a záloha** → **Vybrat složku Klikac…** (např. `Dokumenty\Klikac`). Prázdnou složku
    Klikač naplní scénáři z rozšíření nebo ukázkami.
-6. V `nastaveni.txt` zkontroluj `adresa = http://192.168.215.125:8080` (adresa ISVR). Na stránkách s touto
-   adresou se ukazuje plovoucí panel.
+6. V `nastaveni.txt` zkontroluj `adresa = http://192.168.215.125:8080 | http://192.168.215.225:8080` (servery ISVR,
+   další přidáš za `|`). Na stránkách těchto serverů se ukazuje plovoucí panel. Scénář běží na serveru, na kterém je
+   záložka (mimo aplikaci na posledně použitém); `otevri` s adresou jiného serveru z tohoto seznamu se převede na něj,
+   takže stejné scénáře fungují na všech serverech. Nahrávač zapisuje `otevri` relativně (`/nev/…`).
 
 Po restartu prohlížeče Chrome jednou požádá o potvrzení přístupu ke složce – v popupu nebo editoru je
 tlačítko **Povolit přístup**. Kdyby výběr složky na vzdálené ploše nešel, zůstanou scénáře uvnitř rozšíření

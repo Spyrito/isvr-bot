@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { rozparsujScenar, rozparsujRadek, rozdelNaRovnitku } from '../lib/dsl.js';
-import { rozbal, najdiSoubor, prectiNastaveni } from '../lib/soubory.js';
+import { rozbal, najdiSoubor, prectiNastaveni, seznamAdres, adresaStranky, naServer } from '../lib/soubory.js';
 import { Data, dosad, vyhodnot, sledovaneKlice, zkontrolujVyraz, najdiVyrazy } from '../lib/promenne.js';
 import { RUIAN, RUIAN_OVERENE } from '../generatory/ruian-data.js';
 import { SOUDY, adresyKVyberu } from '../generatory/adresa.js';
@@ -235,5 +235,19 @@ test('CSV: BOM, středníky, rozšiřování hlavičky', () => {
 
 test('nastavení', () => {
   const n = prectiNastaveni(ukazky['nastaveni.txt']);
-  assert.deepEqual(n, { adresa: 'https://notar.local', pauza: 200, timeout: 10000, dialogy: 'ano' });
+  assert.deepEqual(n, { adresa: 'https://notar.local', adresy: ['https://notar.local'], pauza: 200, timeout: 10000, dialogy: 'ano' });
+});
+
+test('víc serverů aplikace: adresa = A | B', () => {
+  const n = prectiNastaveni(isvr['nastaveni.txt']);
+  assert.deepEqual(n.adresy, ['http://192.168.215.125:8080', 'http://192.168.215.225:8080']);
+  assert.equal(n.adresa, 'http://192.168.215.125:8080');
+  assert.deepEqual(seznamAdres(' http://a:8080/ |http://b:8080 | '), ['http://a:8080', 'http://b:8080']);
+  assert.equal(adresaStranky('http://192.168.215.225:8080/nev/prihlaseni.html', n.adresy), 'http://192.168.215.225:8080');
+  assert.equal(adresaStranky('http://192.168.215.226:8080/nev/', n.adresy), null);
+  // scénář nahraný na …125 se na …225 otevře na …225
+  assert.equal(naServer('http://192.168.215.125:8080/nev/prihlaseni.html?x=1', n.adresy, 'http://192.168.215.225:8080'), 'http://192.168.215.225:8080/nev/prihlaseni.html?x=1');
+  // cizí adresu nepřepisuje
+  assert.equal(naServer('https://example.com/a', n.adresy, 'http://192.168.215.225:8080'), 'https://example.com/a');
+  assert.equal(new URL('/nev/prihlaseni.html', 'http://192.168.215.225:8080').href, 'http://192.168.215.225:8080/nev/prihlaseni.html');
 });
