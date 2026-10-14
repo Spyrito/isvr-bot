@@ -448,15 +448,26 @@ await test('víc serverů aplikace: běh zůstane na serveru záložky, adresa z
   const DRUHY = APP.replace('127.0.0.1', 'localhost');
   await ext.evaluate(async ({ app, druhy }) => {
     const { soubory } = await chrome.storage.local.get('soubory');
-    soubory['nastaveni.txt'] = soubory['nastaveni.txt'].replace(/^adresa.*$/m, `adresa  = ${app} | ${druhy}/`);
+    soubory['nastaveni.txt'] = soubory['nastaveni.txt'].replace(/^adresa.*$/m, `adresa  = ${app}`);
     soubory['useky/Relativne.txt'] = 'otevri    /Menu.aspx\n';
     soubory['useky/Absolutne.txt'] = `otevri    ${app}/Subjekty/Novy.aspx\ncekej-na  @main #ddlTyp\n`;
     await chrome.storage.local.set({ soubory });
   }, { app: APP, druhy: DRUHY });
   await zprava({ typ: 'ovladani', tabId, akce: 'zavrit' });
   await app.goto(`${DRUHY}/Subjekty/Novy.aspx`);
-  // panel se ukazuje i na druhém serveru
-  await main().locator('[data-klikac=panel]').waitFor({ state: 'attached' });
+  await main().locator('#ddlTyp').waitFor();
+  await spi(500);
+  assert.equal(await main().locator('[data-klikac=panel]').count(), 0, 'server není v nastavení → bez panelu');
+  // totéž, co dělá tlačítko „Přidat tento server“ v popupu
+  await ext.evaluate(async (druhy) => {
+    const U = await import('/lib/uloziste.js');
+    const { pridejAdresu, NASTAVENI } = await import('/lib/soubory.js');
+    const { soubory } = await U.nactiVse();
+    await U.zapis(NASTAVENI, pridejAdresu(soubory[NASTAVENI], druhy));
+    await chrome.runtime.sendMessage({ typ: 'synchronizuj' });
+  }, DRUHY);
+  // panel se na druhém serveru ukáže hned, bez obnovení stránky
+  await main().locator('[data-klikac=panel]').waitFor({ state: 'attached', timeout: 5000 });
   let [h] = await spustADokonci('useky/Relativne.txt');
   assert.equal(h.vysledek, 'OK', JSON.stringify(h));
   assert.equal(app.url(), `${DRUHY}/Menu.aspx`);

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { rozparsujScenar, rozparsujRadek, rozdelNaRovnitku } from '../lib/dsl.js';
-import { rozbal, najdiSoubor, prectiNastaveni, seznamAdres, adresaStranky, naServer } from '../lib/soubory.js';
+import { rozbal, najdiSoubor, prectiNastaveni, seznamAdres, adresaStranky, naServer, pridejAdresu } from '../lib/soubory.js';
 import { Data, dosad, vyhodnot, sledovaneKlice, zkontrolujVyraz, najdiVyrazy } from '../lib/promenne.js';
 import { RUIAN, RUIAN_OVERENE } from '../generatory/ruian-data.js';
 import { SOUDY, adresyKVyberu } from '../generatory/adresa.js';
@@ -250,4 +250,11 @@ test('víc serverů aplikace: adresa = A | B', () => {
   // cizí adresu nepřepisuje
   assert.equal(naServer('https://example.com/a', n.adresy, 'http://192.168.215.225:8080'), 'https://example.com/a');
   assert.equal(new URL('/nev/prihlaseni.html', 'http://192.168.215.225:8080').href, 'http://192.168.215.225:8080/nev/prihlaseni.html');
+  // tlačítko „Přidat tento server“ v popupu
+  const stare = '# komentář\r\nadresa  = http://192.168.215.125:8080\r\npauza = 100\r\n';
+  const nove = pridejAdresu(stare, 'http://192.168.215.225:8080');
+  assert.equal(nove, '# komentář\r\nadresa  = http://192.168.215.125:8080 | http://192.168.215.225:8080\r\npauza = 100\r\n');
+  assert.equal(pridejAdresu(nove, 'http://192.168.215.225:8080'), nove);
+  assert.deepEqual(prectiNastaveni(nove).adresy, ['http://192.168.215.125:8080', 'http://192.168.215.225:8080']);
+  assert.equal(pridejAdresu('pauza = 1\n', 'http://x:1'), 'pauza = 1\nadresa  = http://x:1\n');
 });

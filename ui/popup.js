@@ -1,5 +1,5 @@
 import * as U from '../lib/uloziste.js';
-import { seznamScenaru } from '../lib/soubory.js';
+import { seznamScenaru, prectiNastaveni, adresaStranky, pridejAdresu, NASTAVENI, VYCHOZI_NASTAVENI_TEXT } from '../lib/soubory.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -93,6 +93,30 @@ async function obnov() {
   scenare = seznamScenaru(soubory);
   if (vybrany && !scenare.some((s) => s.cesta === vybrany)) vybrany = null;
   vykresliSeznam();
+  vykresliServer(soubory);
+}
+
+// Stránka na serveru, který není v „adresa =“ v nastaveni.txt → panel se tu neukazuje; nabídneme ho přidat.
+function vykresliServer(soubory) {
+  const el = $('server');
+  el.classList.add('skryte');
+  if (!tab || !/^https?:/i.test(tab.url || '')) return;
+  const { adresy } = prectiNastaveni(soubory[NASTAVENI]);
+  if (adresaStranky(tab.url, adresy)) return;
+  const server = new URL(tab.url).origin;
+  el.classList.remove('skryte');
+  el.innerHTML = `Server <b>${esc(server)}</b> není v <code>nastaveni.txt</code> (adresa =), proto se tu panel neukazuje.
+    <div class="radek" style="margin-top:6px"><button id="pridat-server" class="hl">Přidat tento server</button></div>`;
+  $('pridat-server').onclick = async () => {
+    try {
+      await U.zapis(NASTAVENI, pridejAdresu(soubory[NASTAVENI] ?? VYCHOZI_NASTAVENI_TEXT, server));
+      await chrome.runtime.sendMessage({ typ: 'synchronizuj' });
+      el.className = 'box ok';
+      el.textContent = `Přidáno. Panel se na ${server} teď ukazuje.`;
+    } catch (e) {
+      el.innerHTML = `<div class="box chyba">Nastavení se nepodařilo uložit: ${esc(e.message)}</div>`;
+    }
+  };
 }
 
 async function start() {
